@@ -5,7 +5,9 @@ window.SUPA = {
   key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpeHRvemVnaHh3aWlkcG5sb2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzgzNzgsImV4cCI6MjA5ODMxNDM3OH0.hJzlERAwXkbK8wV7R-NTcfa1YQ-TTk8R9nCM0Qdtblg",
 };
 window.SB = window.supabase.createClient(window.SUPA.url, window.SUPA.key, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" },
+  // implicit flow: tokens arrive in the URL hash. Required for server-generated magic links
+  // (admin.generateLink) which have no client-side PKCE verifier in localStorage.
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "implicit" },
 });
 window.AUTH = {
   async session() { const { data } = await SB.auth.getSession(); return data.session; },
