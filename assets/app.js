@@ -290,20 +290,105 @@
     render("iphone");
   }
 
+  // ---------- Academy ----------
+  let _lessons = null;
+  async function vAcademy() {
+    view.innerHTML = `<h1 class="page">Academy</h1><p class="page-sub">Loading…</p>`;
+    const [lessons, prog] = await Promise.all([DB.academyLessons(), DB.lessonProgress()]);
+    _lessons = lessons;
+    const doneCount = lessons.filter(l => prog[l.id]?.done).length;
+    const pct = lessons.length ? Math.round(doneCount / lessons.length * 100) : 0;
+    let firstLocked = false;
+    const rows = lessons.map((l, i) => {
+      const done = !!prog[l.id]?.done;
+      const unlocked = i === 0 || prog[lessons[i - 1].id]?.done;
+      const locked = !unlocked && !done;
+      return `<div class="lrow lesson ${locked ? "locked" : ""}" data-id="${l.id}">
+        <span class="lnum ${done ? "done" : ""}">${done ? "✓" : (l.day_number || i + 1)}</span>
+        <span class="ltext"><span class="lt">${esc(l.title)}</span><span class="ls">Day ${l.day_number} · ${l.duration_min} min</span></span>
+        <span class="chev">${locked ? "🔒" : "›"}</span></div>`;
+    }).join("");
+    view.innerHTML = `<h1 class="page">Academy</h1><p class="page-sub">Daily lessons on balance, movement &amp; healthy aging — self-paced.</p>
+      <div class="card" style="margin-bottom:16px"><div class="section-title" style="margin:0 0 8px"><h2>Your progress</h2><span style="color:var(--muted);font-weight:700">${doneCount} of ${lessons.length}</span></div>
+        <div class="pbar"><i style="width:${pct}%"></i></div></div>
+      <div class="card listcard">${rows}</div>`;
+    view.querySelectorAll(".lesson:not(.locked)").forEach(el => el.onclick = () => location.hash = "#/lesson/" + el.dataset.id);
+  }
+  async function vLesson(id) {
+    const list = _lessons || await DB.academyLessons();
+    const l = list.find(x => x.id === id); if (!l) return notFound();
+    const prog = await DB.lessonProgress(); const taskDone = !!prog[id]?.task;
+    view.innerHTML = `<button class="backlink" onclick="location.hash='#/academy'">‹ Academy</button>
+      <h1 class="page" style="font-size:24px">${esc(l.title)}</h1>
+      <div class="info-photo" style="max-width:none;margin:10px 0 18px"><img src="${img(l.cover_seed || ("lesson"+id), 1000, 500)}" alt=""></div>
+      <div class="article">${(l.body || "").split("\n").map(p => `<p>${esc(p)}</p>`).join("")}</div>
+      <div class="card" style="margin-top:18px"><div class="section-title" style="margin:0 0 8px"><h2>Your task</h2></div>
+        <div class="task ${taskDone ? "done" : ""}" id="task"><span class="box">${taskDone ? "✓" : ""}</span><span class="lab">${esc(l.task || "Reflect on today's lesson.")}</span></div>
+        <button class="btn block" id="finish" style="margin-top:14px">${prog[id]?.done ? "✓ Completed" : "Mark lesson complete"}</button></div>`;
+    let done = taskDone;
+    view.querySelector("#task").onclick = () => { done = !done; const t = view.querySelector("#task"); t.classList.toggle("done", done); t.querySelector(".box").textContent = done ? "✓" : ""; };
+    view.querySelector("#finish").onclick = async () => { await DB.completeLesson(id, done); view.querySelector("#finish").textContent = "✓ Completed"; };
+  }
+
+  // ---------- Challenges ----------
+  async function vChallenges(tab) {
+    tab = tab || "all";
+    view.innerHTML = `<h1 class="page">Challenges</h1><p class="page-sub">Loading…</p>`;
+    const [list, mine] = await Promise.all([DB.challengesList(), DB.myChallenges()]);
+    const tabs = `<div class="tabs"><button data-t="mine" class="${tab==='mine'?'on':''}">My challenges</button><button data-t="all" class="${tab==='all'?'on':''}">All challenges</button></div>`;
+    const show = tab === "mine" ? list.filter(c => mine[c.id]) : list;
+    const cards = show.length ? `<div class="grid-cards">${show.map(c => {
+      const m = mine[c.id]; const dd = (m && m.days_done) || [];
+      return `<div class="wcard chal" data-id="${c.id}"><div class="thumb"><img src="${img(c.cover_seed,400,260)}" alt="">
+        ${m ? `<span class="b badge beg">${dd.length}/${c.days} days</span>` : ""}</div>
+        <div class="body"><div class="t">${esc(c.title)}</div><div class="m">${esc(c.subtitle || "")} · ${c.days} days</div></div></div>`;
+    }).join("")}</div>` : `<div class="soon"><div class="big">🏆</div><p>${tab==='mine'?"You haven't joined a challenge yet. Browse all challenges to start one.":"No challenges yet."}</p></div>`;
+    view.innerHTML = `<h1 class="page">Challenges</h1><p class="page-sub">Short, focused plans to help you build a habit.</p>${tabs}${cards}`;
+    view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/challenges/" + b.dataset.t);
+    view.querySelectorAll(".chal").forEach(el => el.onclick = () => location.hash = "#/challenge/" + el.dataset.id);
+  }
+  async function vChallenge(id) {
+    const [list, mine] = await Promise.all([DB.challengesList(), DB.myChallenges()]);
+    const c = list.find(x => x.id === id); if (!c) return notFound();
+    const m = mine[id]; const dd = (m && m.days_done) || [];
+    const grid = Array.from({ length: c.days }, (_, i) => i + 1).map(d => {
+      const done = dd.includes(d);
+      return `<button class="daycell ${done ? "done" : ""} ${m ? "" : "preview"}" data-day="${d}">${done ? "✓" : d}</button>`;
+    }).join("");
+    view.innerHTML = `<button class="backlink" onclick="location.hash='#/challenges'">‹ Challenges</button>
+      <div class="info-photo" style="max-width:none;margin:6px 0 14px"><img src="${img(c.cover_seed,1000,440)}" alt=""></div>
+      <h1 class="page">${esc(c.title)}</h1><p class="page-sub">${esc(c.subtitle || "")} · ${c.days} days</p>
+      <div class="card"><div class="section-title" style="margin:0 0 8px"><h2>About</h2></div><p style="color:#34433b;margin:0">${esc(c.about || "")}</p></div>
+      <div class="section-title"><h2>Day-by-day plan</h2><span style="color:var(--muted);font-weight:700">${m ? dd.length + "/" + c.days : c.days + " days"}</span></div>
+      <div class="daygrid">${grid}</div>
+      <p class="page-sub" style="margin-top:10px">${m ? "Tap a day to check it off." : "A peek at the plan. Start the challenge to check off each day."}</p>
+      <div class="cta-fixed"><button class="btn block" id="cbtn">${m ? "Keep going" : "Start the challenge"}</button></div>`;
+    if (!m) {
+      view.querySelector("#cbtn").onclick = async () => { await DB.startChallenge(id); vChallenge(id); };
+    } else {
+      view.querySelector("#cbtn").onclick = () => location.hash = "#/challenges/mine";
+      view.querySelectorAll(".daycell").forEach(cell => cell.onclick = async () => {
+        const day = +cell.dataset.day; const nd = await DB.toggleChallengeDay(id, day);
+        const on = nd.includes(day); cell.classList.toggle("done", on); cell.textContent = on ? "✓" : day;
+      });
+    }
+  }
+
   function vSoon(title, icon, msg) { view.innerHTML = `<h1 class="page">${title}</h1><div class="soon"><div class="big">${icon}</div><p>${msg}</p></div>`; }
   function notFound() { view.innerHTML = `<div class="soon"><div class="big">🤷</div><p>Page not found.</p></div>`; }
 
   function route() {
     if (!DATA) return;
     const [r, a] = (location.hash.replace(/^#\//, "") || "home").split("/");
-    const navMap = { workout: "exercises", track: "tracking", profile: "", subscription: "", install: "" };
+    const navMap = { workout: "exercises", track: "tracking", profile: "", subscription: "", install: "",
+      lesson: "academy", challenge: "challenges" };
     renderNav(r in navMap ? navMap[r] : r);
     window.scrollTo(0, 0);
     ({ home: vHome, exercises: () => vExercises(a), workout: () => vWorkout(a), tracking: vTracking,
        track: () => vTrack(a), stress: () => vStress(a), favorites: vFavorites,
        profile: vProfile, subscription: vManageSub, install: vInstall,
-       academy: () => vSoon("Academy", "📖", "Daily Tai Chi & healthy-aging lessons are coming here soon."),
-       challenges: () => vSoon("Challenges", "🏆", "Short habit challenges are coming soon."),
+       academy: vAcademy, lesson: () => vLesson(a),
+       challenges: () => vChallenges(a), challenge: () => vChallenge(a),
      }[r] || vHome)();
   }
 

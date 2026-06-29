@@ -76,6 +76,16 @@ window.DB = (function () {
         value: numeric ? parseFloat(value) : null, text_value: numeric ? null : String(value),
       });
     },
+    // ----- Academy -----
+    async academyLessons() { const { data } = await SB.from("lessons").select("*").eq("is_published", true).order("sort"); return data || []; },
+    async lessonProgress() { const { data } = await SB.from("user_lesson_progress").select("lesson_id,task_done"); const m = {}; (data || []).forEach(r => m[r.lesson_id] = { done: true, task: r.task_done }); return m; },
+    async completeLesson(id, taskDone) { const u = (await SB.auth.getUser()).data.user; await SB.from("user_lesson_progress").upsert({ user_id: u.id, lesson_id: id, task_done: !!taskDone, completed_at: new Date().toISOString() }, { onConflict: "user_id,lesson_id" }); },
+    // ----- Challenges -----
+    async challengesList() { const { data } = await SB.from("challenges").select("*").eq("is_published", true).order("sort"); return data || []; },
+    async myChallenges() { const { data } = await SB.from("user_challenges").select("*"); const m = {}; (data || []).forEach(r => m[r.challenge_id] = r); return m; },
+    async startChallenge(cid) { const u = (await SB.auth.getUser()).data.user; await SB.from("user_challenges").upsert({ user_id: u.id, challenge_id: cid, status: "active", start_date: new Date().toISOString().slice(0, 10) }, { onConflict: "user_id,challenge_id" }); },
+    async toggleChallengeDay(cid, day) { const { data } = await SB.from("user_challenges").select("id,days_done").eq("challenge_id", cid).maybeSingle(); if (!data) return []; let dd = data.days_done || []; dd = dd.includes(day) ? dd.filter(d => d !== day) : [...dd, day]; await SB.from("user_challenges").update({ days_done: dd }).eq("id", data.id); return dd; },
+
     async updateProfile(fields) {
       const u = (await SB.auth.getUser()).data.user;
       await SB.from("users").update(fields).eq("id", u.id);

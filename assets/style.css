@@ -177,3 +177,20 @@ h1.page{font-size:28px;font-weight:800;margin:0 0 4px}
 .steps-list li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);font-weight:600}
 .steps-list li:last-child{border-bottom:none}
 .steps-list .sn{width:26px;height:26px;border-radius:50%;background:var(--primary-soft);color:var(--primary-dark);display:grid;place-items:center;font-weight:700;flex:none}
+
+/* ===== Academy ===== */
+.lesson{cursor:pointer}
+.lesson.locked{opacity:.55;cursor:default}
+.lnum{width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary-dark);display:grid;place-items:center;font-weight:700;flex:none;margin-right:12px}
+.lnum.done{background:var(--primary);color:#fff}
+.ltext{flex:1}.ltext .lt{font-weight:700;display:block}.ltext .ls{font-size:13px;color:var(--muted)}
+.article p{color:#34433b;margin:0 0 14px;line-height:1.6}
+.article p:first-child{font-size:18px}
+
+/* ===== Challenges ===== */
+.daygrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.daycell{aspect-ratio:1;border:none;border-radius:12px;background:var(--primary-soft);color:var(--ink);font-weight:700;font-size:15px;cursor:pointer}
+.daycell.preview{cursor:default;color:var(--muted)}
+.daycell.done{background:var(--primary);color:#fff}
+.cta-fixed{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(244,247,241,0),var(--bg) 45%);padding:16px 0 4px;margin-top:18px}
+@media (max-width:480px){ .daygrid{grid-template-columns:repeat(5,1fr)} }
