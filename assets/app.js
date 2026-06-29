@@ -37,11 +37,27 @@
       <div class="card" style="max-width:380px;margin:0 auto"><input id="email" class="logger" type="email" placeholder="you@example.com" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:14px;font-size:16px">
       <button class="btn block" id="send" style="margin-top:12px">Send magic link</button><div id="msg" class="page-sub" style="margin-top:12px"></div></div></div>`;
     view.querySelector("#send").onclick = async () => {
+      const btn = view.querySelector("#send"), msg = view.querySelector("#msg");
       const email = view.querySelector("#email").value.trim();
       if (!/^\S+@\S+\.\S+$/.test(email)) { view.querySelector("#email").focus(); return; }
-      view.querySelector("#send").disabled = true;
+      btn.disabled = true; msg.style.color = ""; msg.textContent = "Sending…";
       const { error } = await AUTH.signIn(email);
-      view.querySelector("#msg").innerHTML = error ? "⚠️ " + esc(error.message) : "✓ Check your email for the sign-in link.";
+      if (error) {
+        const limited = error.status === 429 || /rate|too many/i.test(error.message || "");
+        msg.style.color = limited ? "var(--muted)" : "var(--accent)";
+        msg.innerHTML = limited
+          ? "We just sent a few links — please wait a minute, then try again. (Also check your spam folder.)"
+          : "⚠️ " + esc(error.message);
+      } else {
+        msg.style.color = "var(--primary-dark)";
+        msg.innerHTML = "✓ Link sent! Check your email (and spam). Click it to sign in.";
+      }
+      // Re-enable with a short cooldown so the user can always retry (never lock them out).
+      let s = error ? 30 : 20; const orig = "Send magic link";
+      (function tick() {
+        if (s <= 0) { btn.disabled = false; btn.textContent = orig; return; }
+        btn.textContent = "Resend in " + s + "s"; s--; setTimeout(tick, 1000);
+      })();
     };
   }
   function renderGate() {
