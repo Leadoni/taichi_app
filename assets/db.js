@@ -93,6 +93,34 @@ window.DB = (function () {
       const u = (await SB.auth.getUser()).data.user;
       await SB.from("users").update(fields).eq("id", u.id);
     },
+    // ----- Meal plan -----
+    async getPlanItems(startISO, endISO) {
+      const { data } = await SB.from("meal_plan_items").select("*")
+        .gte("plan_date", startISO).lte("plan_date", endISO);
+      return data || [];
+    },
+    async getPlanRun(weekStartISO) {
+      const { data } = await SB.from("meal_plan_runs").select("*").eq("week_start", weekStartISO).maybeSingle();
+      return data;
+    },
+    async savePlanRun(run) {
+      const u = (await SB.auth.getUser()).data.user;
+      await SB.from("meal_plan_runs").upsert({ ...run, user_id: u.id }, { onConflict: "user_id,week_start" });
+    },
+    async savePlanItems(items) {
+      const u = (await SB.auth.getUser()).data.user;
+      const rows = items.map(it => ({ ...it, user_id: u.id }));
+      await SB.from("meal_plan_items").upsert(rows, { onConflict: "user_id,plan_date,meal_type" });
+    },
+    async deletePlanWeek(startISO, endISO) {
+      await SB.from("meal_plan_items").delete().gte("plan_date", startISO).lte("plan_date", endISO);
+    },
+    async setPlanStatus(dateISO, mealType, status) {
+      await SB.from("meal_plan_items").update({ status }).eq("plan_date", dateISO).eq("meal_type", mealType);
+    },
+    async changePlanRecipe(dateISO, mealType, recipeId) {
+      await SB.from("meal_plan_items").update({ recipe_id: recipeId, status: "pending" }).eq("plan_date", dateISO).eq("meal_type", mealType);
+    },
     async setAutoRenew(on) {
       const u = (await SB.auth.getUser()).data.user;
       await SB.from("users").update({ cancel_at_period_end: !on }).eq("id", u.id);

@@ -243,3 +243,25 @@ h1.page{font-size:28px;font-weight:800;margin:0 0 4px}
 .mc-state{padding:12px;text-align:center;font-weight:700;font-size:14px;border-top:1px solid var(--line);cursor:pointer}
 .mc-state.done{background:var(--primary-soft,#eaf3ec);color:var(--primary-dark,#3a6b49)}
 .mc-state.skip{background:#f1f3f2;color:var(--muted,#6b7a70)}
+
+/* Meal plan — header, target, week strip, subtabs */
+.mealhdr{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.regen{border:1px solid var(--line);background:#fff;color:var(--primary-dark,#3a6b49);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.regen:hover{background:var(--primary-soft,#eaf3ec)}
+.target-card{background:#16231c;color:#fff;border-radius:14px;padding:14px 16px;margin:12px 0}
+.target-card .tc-main{font-weight:800;font-size:16px}
+.target-card .tc-sub{font-size:12px;color:#b8c9bf;margin-top:3px}
+.plan-note{background:#fff7e6;border:1px solid #f0dcae;color:#7a5b16;border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px}
+.plan-note a{color:#7a5b16;font-weight:700}
+.daystrip{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;-webkit-overflow-scrolling:touch}
+.daychip{flex:0 0 auto;width:60px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.daychip .dow{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.daychip .dnum{font-size:19px;font-weight:800;line-height:1}
+.daychip .dct{font-size:11px;color:var(--muted)}
+.daychip.today{border-color:var(--primary,#5a9e6f)}
+.daychip.on{background:var(--primary-soft,#eaf3ec);border-color:var(--primary,#5a9e6f)}
+.daychip.on .dct{color:var(--primary-dark,#3a6b49);font-weight:700}
+.subtabs{display:flex;background:var(--card,#f2f5f2);border-radius:12px;padding:4px;margin:6px 0 14px}
+.subtabs button{flex:1;border:none;background:none;padding:9px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}
+.subtabs button.on{background:#fff;color:var(--ink,#1f2a24);box-shadow:var(--shadow)}
+.today-h{font-size:16px;margin:2px 0 10px}

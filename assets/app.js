@@ -155,45 +155,49 @@
   // ---------- Meals ----------
   let _recipes = null;
   let _mealCat = "all", _mealQ = "";
-  async function vMeals(tab) {
-    tab = tab || "today";
-    view.innerHTML = `<h1 class="page">Meals</h1><p class="page-sub">Loading…</p>`;
-    const recipes = _recipes || (_recipes = await DB.recipes());
-    const tabs = `<div class="tabs"><button data-t="today" class="${tab==='today'?'on':''}">Today's plan</button><button data-t="library" class="${tab==='library'?'on':''}">Library</button></div>`;
-    let body;
-    if (tab === "today") {
-      const slots = ["breakfast", "lunch", "snack", "dinner"];
-      const plan = DB.dayGet("mealplan"); // { slot: {id, status} }
-      const rows = slots.map(slot => {
-        const cands = recipes.filter(r => r.meal_type === slot).sort((a, b) => (a.kcal || 0) - (b.kcal || 0));
-        if (!cands.length) return null;
-        const st = plan[slot];
-        const r = (st && cands.find(x => x.id === st.id)) || cands[0];
-        return { slot, r, status: (st && st.status) || "pending" };
-      }).filter(Boolean);
-      const dn = rows.filter(x => x.status === "done").length;
-      body = `<div class="plan-prog"><span>Today's meals</span><span>${dn}/${rows.length}</span></div><div class="pbar"><i style="width:${rows.length?Math.round(dn/rows.length*100):0}%"></i></div>` +
-        rows.map(x => {
-          const r = x.r;
-          const footer = x.status === "done"
-            ? `<div class="mc-state done" data-slot="${x.slot}" data-act="reset">✓ Completed</div>`
-            : x.status === "skipped"
-            ? `<div class="mc-state skip" data-slot="${x.slot}" data-act="reset">▷ Skipped</div>`
-            : `<div class="mc-actions"><button data-slot="${x.slot}" data-act="done">✓ Done</button><button data-slot="${x.slot}" data-act="change">⟳ Change</button><button data-slot="${x.slot}" data-act="skip">▷ Skip</button></div>`;
-          return `<div class="meal-card" data-id="${r.id}"><div class="mc-top"><img src="${img(r.image_seed,240,180)}" alt="">
-            <div class="mc-body"><span class="badge beg">${esc(r.meal_type)}</span><div class="n">${esc(r.title)}</div><div class="s">${r.minutes} min · ${r.kcal} kcal</div></div></div>${footer}</div>`;
-        }).join("");
-    } else {
-      body = `<div class="meal-tools"><input id="mealSearch" class="meal-search" type="search" placeholder="Search recipes or ingredients…" value="${esc(_mealQ)}"><div class="chips" id="mealCats">${["all","breakfast","lunch","dinner","snack"].map(c=>`<button data-c="${c}" class="chip ${_mealCat===c?'on':''}">${c==='all'?'All':c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join("")}</div></div><div id="mealResults"></div>`;
+  let _week = null;         // { startISO, endISO, items:{'date|slot':item}, targets }
+  let _selDay = null;       // ISO date currently selected
+  const SLOTS = ["breakfast", "lunch", "dinner", "snack"];
+  const CAP = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+  function recipeById(id) { return (_recipes || []).find(r => r.id === id); }
+  function curWeightKg() { const w = parseFloat(ST.latest.weight); return w > 0 ? w : null; }
+
+  async function ensureWeek(force) {
+    const ws = PLAN.weekStartOf(new Date());
+    const startISO = PLAN.isoDate(ws), endISO = PLAN.isoDate(PLAN.addDays(ws, 6));
+    if (!force) {
+      const existing = await DB.getPlanItems(startISO, endISO);
+      if (existing.length) {
+        const run = await DB.getPlanRun(startISO);
+        const items = {}; existing.forEach(it => items[it.plan_date + "|" + it.meal_type] = it);
+        return { startISO, endISO, items, targets: run ? { daily: run.daily_kcal, split: run.split || {}, basis: run.start_weight_kg ? "personalized" : "default", goal: run.goal_weight_kg } : { daily: null, split: {}, basis: "default" } };
+      }
     }
-    view.innerHTML = `<h1 class="page">Meals</h1><p class="page-sub">Simple, gentle recipes to support your routine.</p>${tabs}${body}`;
-    view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/meals/" + b.dataset.t);
+    const t = PLAN.targets(PROFILE, curWeightKg());
+    const gen = PLAN.generateWeek(_recipes, t.split, ws, PROFILE.id || "seed");
+    if (force) await DB.deletePlanWeek(startISO, endISO);
+    await DB.savePlanRun({ week_start: startISO, start_weight_kg: curWeightKg(), goal_weight_kg: PROFILE.target_weight_kg || null,
+      gender: t.gender, age: t.age, height_cm: t.height, activity: 1.35, daily_kcal: t.daily, split: t.split });
+    await DB.savePlanItems(gen);
+    const items = {}; gen.forEach(it => items[it.plan_date + "|" + it.meal_type] = Object.assign({ status: "pending" }, it));
+    return { startISO, endISO, items, targets: { daily: t.daily, split: t.split, basis: t.basis, goal: PROFILE.target_weight_kg, missing: t.missing } };
+  }
+
+  async function vMeals(tab) {
+    tab = tab === "library" ? "library" : "plan";
+    view.innerHTML = `<h1 class="page">Meal plan</h1><p class="page-sub">Loading&hellip;</p>`;
+    _recipes || (_recipes = await DB.recipes());
+    const tabs = `<div class="tabs"><button data-t="plan" class="${tab==='plan'?'on':''}">Plan</button><button data-t="library" class="${tab==='library'?'on':''}">Library</button></div>`;
+
     if (tab === "library") {
+      view.innerHTML = `<h1 class="page">Meal plan</h1>${tabs}<div class="meal-tools"><input id="mealSearch" class="meal-search" type="search" placeholder="Search recipes or ingredients&hellip;" value="${esc(_mealQ)}"><div class="chips" id="mealCats">${["all","breakfast","lunch","dinner","snack"].map(c=>`<button data-c="${c}" class="chip ${_mealCat===c?'on':''}">${c==='all'?'All':CAP(c)}</button>`).join("")}</div></div><div id="mealResults"></div>`;
+      view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/meals/" + b.dataset.t);
       const results = view.querySelector("#mealResults");
-      const cardHtml = r => `<div class="wcard meal" data-id="${r.id}"><div class="thumb"><img src="${img(r.image_seed,400,260)}" alt=""><span class="b badge beg">${esc(r.meal_type)}</span></div><div class="body"><div class="t">${esc(r.title)}</div><div class="m">${r.minutes} min \u00b7 ${r.kcal} kcal</div></div></div>`;
+      const cardHtml = r => `<div class="wcard meal" data-id="${r.id}"><div class="thumb"><img src="${img(r.image_seed,400,260)}" alt=""><span class="b badge beg">${esc(r.meal_type)}</span></div><div class="body"><div class="t">${esc(r.title)}</div><div class="m">${r.minutes} min &middot; ${r.kcal} kcal</div></div></div>`;
       const doRender = () => {
         const q = _mealQ.trim().toLowerCase();
-        const list = recipes.filter(r => {
+        const list = _recipes.filter(r => {
           if (_mealCat !== "all" && r.meal_type !== _mealCat) return false;
           if (!q) return true;
           const hay = (r.title + " " + (r.ingredients||[]).join(" ") + " " + (r.instructions||[]).join(" ")).toLowerCase();
@@ -206,25 +210,86 @@
       const search = view.querySelector("#mealSearch");
       search.oninput = () => { _mealQ = search.value; doRender(); };
       view.querySelectorAll("#mealCats .chip").forEach(b => b.onclick = () => { _mealCat = b.dataset.c; view.querySelectorAll("#mealCats .chip").forEach(x => x.classList.toggle("on", x === b)); doRender(); });
+      return;
     }
-    view.querySelectorAll(".meal-card .mc-top").forEach(el => el.onclick = () => location.hash = "#/recipe/" + el.closest(".meal-card").dataset.id);
-    view.querySelectorAll(".mc-actions button, .mc-state[data-slot]").forEach(b => b.onclick = (e) => {
-      e.stopPropagation();
-      const slot = b.dataset.slot, act = b.dataset.act;
-      const plan = DB.dayGet("mealplan");
-      const cands = recipes.filter(r => r.meal_type === slot).sort((a, c) => (a.kcal || 0) - (c.kcal || 0));
-      if (!cands.length) return;
-      let cur = plan[slot] || { id: cands[0].id, status: "pending" };
-      if (act === "done") cur.status = "done";
-      else if (act === "skip") cur.status = "skipped";
-      else if (act === "reset") cur.status = "pending";
-      else if (act === "change") {
-        const idx = Math.max(0, cands.findIndex(r => r.id === cur.id));
-        cur = { id: cands[(idx + 1) % cands.length].id, status: "pending" };
-      }
-      plan[slot] = cur; DB.daySet("mealplan", plan); vMeals("today");
-    });
+
+    // ---- Plan tab ----
+    _week = await ensureWeek(false);
+    const today = PLAN.isoDate(new Date());
+    if (!_selDay || _selDay < _week.startISO || _selDay > _week.endISO) _selDay = (today >= _week.startISO && today <= _week.endISO) ? today : _week.startISO;
+
+    function dayCount(dateISO) {
+      let done = 0, total = 0;
+      SLOTS.forEach(s => { const it = _week.items[dateISO + "|" + s]; if (it) { total++; if (it.status === "done") done++; } });
+      return { done, total };
+    }
+    function renderPlan() {
+      const t = _week.targets || {};
+      const goalTxt = t.goal ? ` &middot; goal ${(+t.goal).toFixed(0)} kg` : "";
+      const targetLine = t.daily ? `Daily target ~${t.daily} kcal${goalTxt}` : "Set your details to personalize";
+      const needs = (t.missing || []).filter(m => m === "weight" || m === "height");
+      const note = (t.basis === "default" || needs.length)
+        ? `<div class="plan-note">Add your ${needs.length?needs.join(" and "):"current weight and height"} in <a href="#/profile">Profile</a> to personalize this plan for weight loss.</div>` : "";
+      const strip = Array.from({ length: 7 }, (_, i) => PLAN.isoDate(PLAN.addDays(new Date(_week.startISO), i))).map(d => {
+        const dt = new Date(d + "T00:00:00"); const c = dayCount(d);
+        return `<button class="daychip ${d===_selDay?'on':''} ${d===today?'today':''}" data-day="${d}">
+          <span class="dow">${dt.toLocaleDateString(undefined,{weekday:'short'}).toUpperCase()}</span>
+          <span class="dnum">${dt.getDate()}</span><span class="dct">${c.done}/${c.total||4}</span></button>`;
+      }).join("");
+      const rows = SLOTS.map(slot => {
+        const it = _week.items[_selDay + "|" + slot]; if (!it) return "";
+        const r = recipeById(it.recipe_id); if (!r) return "";
+        const footer = it.status === "done"
+          ? `<div class="mc-state done" data-slot="${slot}" data-act="reset">&#10003; Completed</div>`
+          : it.status === "skipped"
+          ? `<div class="mc-state skip" data-slot="${slot}" data-act="reset">&#9655; Skipped</div>`
+          : `<div class="mc-actions"><button data-slot="${slot}" data-act="done">&#10003; Done</button><button data-slot="${slot}" data-act="change">&#8635; Change</button><button data-slot="${slot}" data-act="skip">&#9655; Skip</button></div>`;
+        return `<div class="meal-card" data-id="${r.id}"><div class="mc-top"><img src="${img(r.image_seed,240,180)}" alt="">
+          <div class="mc-body"><span class="badge beg">${CAP(slot)}</span><div class="n">${esc(r.title)}</div><div class="s">${r.minutes} min &middot; ${r.kcal} kcal${it.kcal_target?` &middot; target ~${it.kcal_target}`:""}</div></div></div>${footer}</div>`;
+      }).join("");
+      const selDate = new Date(_selDay + "T00:00:00");
+      view.innerHTML = `<div class="mealhdr"><h1 class="page" style="margin:0">Meal plan</h1><button class="regen" id="regen">&#8635; Regenerate</button></div>
+        ${tabs}
+        <div class="target-card"><div class="tc-main">${targetLine}</div><div class="tc-sub">Meals tuned to a gentle, steady deficit. Guidance only, not medical advice.</div></div>
+        ${note}
+        <div class="daystrip">${strip}</div>
+        <div class="subtabs"><button class="on" data-s="meals">Meals</button><button data-s="nutrition">Nutrition</button><button data-s="groceries">Groceries</button></div>
+        <div id="subview"><h2 class="today-h">${selDate.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</h2>${rows}</div>`;
+      view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/meals/" + b.dataset.t);
+      view.querySelector("#regen").onclick = async () => {
+        if (!confirm("Regenerate this week's plan from your current weight? This replaces the current week.")) return;
+        view.innerHTML = `<h1 class="page">Meal plan</h1><p class="page-sub">Building your plan&hellip;</p>`;
+        _week = await ensureWeek(true); renderPlan();
+      };
+      view.querySelectorAll(".daychip").forEach(b => b.onclick = () => { _selDay = b.dataset.day; renderPlan(); });
+      view.querySelectorAll(".subtabs button").forEach(b => b.onclick = () => {
+        view.querySelectorAll(".subtabs button").forEach(x => x.classList.toggle("on", x === b));
+        const sv = view.querySelector("#subview");
+        if (b.dataset.s === "meals") { renderPlan(); }
+        else sv.innerHTML = `<div class="soon"><div class="big">${b.dataset.s==='nutrition'?'&#128202;':'&#128722;'}</div><p>${b.dataset.s==='nutrition'?'Nutrition totals vs. your daily target are coming soon.':'Auto-built grocery lists from your week are coming soon.'}</p></div>`;
+      });
+      view.querySelectorAll(".meal-card .mc-top").forEach(el => el.onclick = () => location.hash = "#/recipe/" + el.closest(".meal-card").dataset.id);
+      view.querySelectorAll(".mc-actions button, .mc-state[data-slot]").forEach(b => b.onclick = async (e) => {
+        e.stopPropagation();
+        const slot = b.dataset.slot, act = b.dataset.act, key = _selDay + "|" + slot, it = _week.items[key];
+        if (!it) return;
+        if (act === "done" || act === "skip" || act === "reset") {
+          const status = act === "reset" ? "pending" : act === "done" ? "done" : "skipped";
+          it.status = status; renderPlan();
+          await DB.setPlanStatus(_selDay, slot, status);
+        } else if (act === "change") {
+          const tgt = it.kcal_target || 0;
+          const cands = _recipes.filter(r => r.meal_type === slot).sort((a, c) => Math.abs((a.kcal||0)-tgt) - Math.abs((c.kcal||0)-tgt));
+          const idx = Math.max(0, cands.findIndex(r => r.id === it.recipe_id));
+          const next = cands[(idx + 1) % cands.length];
+          it.recipe_id = next.id; it.status = "pending"; renderPlan();
+          await DB.changePlanRecipe(_selDay, slot, next.id);
+        }
+      });
+    }
+    renderPlan();
   }
+
   async function vRecipe(id) {
     const recipes = _recipes || (_recipes = await DB.recipes());
     const r = recipes.find(x => x.id === id); if (!r) return notFound();
@@ -355,6 +420,7 @@
         <div class="sec-label">YOUR INFO</div>
         <label class="fl">Name</label><input id="pf-name" class="tin" value="${esc(p.name||"")}">
         <label class="fl">Email address</label><input class="tin" value="${esc(p.email||"")}" disabled>
+        <label class="fl">Height (cm)</label><input id="pf-height" class="tin" type="number" inputmode="decimal" value="${p.height_cm||""}" placeholder="e.g. 165">
         <label class="fl">Daily steps goal</label><input id="pf-steps" class="tin" type="number" value="${p.daily_steps_goal||7000}" placeholder="7000">
         <div style="text-align:right;margin-top:14px"><button class="btn" id="pf-save">Save changes</button></div>
         <div id="pf-msg" class="page-sub" style="text-align:right;margin-top:8px"></div>
@@ -382,8 +448,10 @@
     view.querySelector("#pf-save").onclick = async () => {
       const name = view.querySelector("#pf-name").value.trim();
       const steps = parseInt(view.querySelector("#pf-steps").value) || 7000;
-      await DB.updateProfile({ name, daily_steps_goal: steps });
-      PROFILE.name = name; PROFILE.daily_steps_goal = steps;
+      const heightRaw = parseFloat(view.querySelector("#pf-height").value);
+      const height_cm = heightRaw > 0 ? heightRaw : null;
+      await DB.updateProfile({ name, daily_steps_goal: steps, height_cm });
+      PROFILE.name = name; PROFILE.daily_steps_goal = steps; PROFILE.height_cm = height_cm;
       const m = view.querySelector("#pf-msg"); m.style.color = "var(--primary-dark)"; m.textContent = "✓ Saved";
       renderNav("profile");
     };
