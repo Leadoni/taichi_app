@@ -348,3 +348,13 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .groc-email input:focus{border-color:var(--primary)}
 .groc-email .btn{padding:11px 20px;font-size:15px}
 .groc-email-msg{flex-basis:100%;font-size:13px;color:var(--muted)}
+
+/* Academy lesson article */
+.lesson-eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--primary);font-weight:700;margin:6px 0 2px}
+.lesson-lead{font-family:var(--serif);font-style:italic;font-size:18px;color:#5a4f42;line-height:1.5;margin:0 0 16px}
+.article{color:#4a3f34;line-height:1.7}
+.article p{margin:0 0 14px;font-size:16px}
+.art-h{font-family:var(--serif);font-weight:600;font-size:19px;margin:20px 0 8px;color:var(--ink)}
+.art-ul{margin:0 0 14px;padding:0;list-style:none}
+.art-ul li{position:relative;padding:6px 0 6px 22px;font-size:16px;color:#4a3f34}
+.art-ul li::before{content:"";position:absolute;left:2px;top:13px;width:7px;height:7px;border-radius:50%;background:var(--primary)}

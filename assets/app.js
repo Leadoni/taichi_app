@@ -733,26 +733,43 @@
 
   // ---------- Academy ----------
   let _lessons = null;
+  const ACADEMY_SECTIONS = ["Foundations & the Daily Habit", "Steady & Strong: Balance", "Move Freely: Joints & Mobility", "Calm Mind, Clear Focus", "Aging Well: Everyday Habits"];
+  function renderArticle(body) {
+    let html = "", inList = false;
+    (body || "").split("\n").forEach(raw => {
+      const line = raw.trim();
+      if (!line) { if (inList) { html += "</ul>"; inList = false; } return; }
+      if (line.startsWith("## ")) { if (inList) { html += "</ul>"; inList = false; } html += `<h4 class="art-h">${esc(line.slice(3))}</h4>`; }
+      else if (line.startsWith("- ")) { if (!inList) { html += '<ul class="art-ul">'; inList = true; } html += `<li>${esc(line.slice(2))}</li>`; }
+      else { if (inList) { html += "</ul>"; inList = false; } html += `<p>${esc(line)}</p>`; }
+    });
+    if (inList) html += "</ul>";
+    return html;
+  }
   async function vAcademy() {
     view.innerHTML = `<h1 class="page">Academy</h1><p class="page-sub">Loading…</p>`;
     const [lessons, prog] = await Promise.all([DB.academyLessons(), DB.lessonProgress()]);
     _lessons = lessons;
     const doneCount = lessons.filter(l => prog[l.id]?.done).length;
     const pct = lessons.length ? Math.round(doneCount / lessons.length * 100) : 0;
-    let firstLocked = false;
-    const rows = lessons.map((l, i) => {
-      const done = !!prog[l.id]?.done;
-      const unlocked = i === 0 || prog[lessons[i - 1].id]?.done;
-      const locked = !unlocked && !done;
-      return `<div class="lrow lesson ${locked ? "locked" : ""}" data-id="${l.id}">
-        <span class="lnum ${done ? "done" : ""}">${done ? "✓" : (l.day_number || i + 1)}</span>
-        <span class="ltext"><span class="lt">${esc(l.title)}</span><span class="ls">Day ${l.day_number} · ${l.duration_min} min</span></span>
-        <span class="chev">${locked ? "🔒" : "›"}</span></div>`;
+    const groups = {};
+    lessons.forEach((l, i) => { l._unlocked = i === 0 || !!prog[lessons[i - 1].id]?.done; (groups[l.week_number] = groups[l.week_number] || []).push(l); });
+    const sectionsHtml = Object.keys(groups).sort((a, b) => a - b).map(wk => {
+      const items = groups[wk], secDone = items.filter(l => prog[l.id]?.done).length;
+      const rows = items.map(l => {
+        const done = !!prog[l.id]?.done, locked = !l._unlocked && !done;
+        return `<div class="lrow lesson ${locked ? "locked" : ""}" data-id="${l.id}">
+          <span class="lnum ${done ? "done" : ""}">${done ? "✓" : l.day_number}</span>
+          <span class="ltext"><span class="lt">${esc(l.title)}</span><span class="ls">Day ${l.day_number} · ${l.duration_min} min</span></span>
+          <span class="chev">${locked ? "🔒" : "›"}</span></div>`;
+      }).join("");
+      return `<div class="section-title" style="margin:24px 0 10px"><h2>${esc(ACADEMY_SECTIONS[wk-1] || ("Section " + wk))}</h2><span style="color:var(--muted);font-weight:700">${secDone}/${items.length}</span></div>
+        <div class="card listcard">${rows}</div>`;
     }).join("");
-    view.innerHTML = `<h1 class="page">Academy</h1><p class="page-sub">Daily lessons on balance, movement &amp; healthy aging — self-paced.</p>
-      <div class="card" style="margin-bottom:16px"><div class="section-title" style="margin:0 0 8px"><h2>Your progress</h2><span style="color:var(--muted);font-weight:700">${doneCount} of ${lessons.length}</span></div>
-        <div class="pbar"><i style="width:${pct}%"></i></div></div>
-      <div class="card listcard">${rows}</div>`;
+    view.innerHTML = `<h1 class="page">Academy</h1><p class="page-sub">A 50-day journey — one gentle lesson a day. Finish each to unlock the next.</p>
+      <div class="card"><div class="section-title" style="margin:0 0 8px"><h2>Your progress</h2><span style="color:var(--muted);font-weight:700">${doneCount} of ${lessons.length}</span></div>
+        <div class="pbar" style="margin-bottom:0"><i style="width:${pct}%"></i></div></div>
+      ${sectionsHtml}`;
     view.querySelectorAll(".lesson:not(.locked)").forEach(el => el.onclick = () => location.hash = "#/lesson/" + el.dataset.id);
   }
   async function vLesson(id) {
@@ -760,9 +777,11 @@
     const l = list.find(x => x.id === id); if (!l) return notFound();
     const prog = await DB.lessonProgress(); const taskDone = !!prog[id]?.task;
     view.innerHTML = `<button class="backlink" onclick="location.hash='#/academy'">‹ Academy</button>
-      <h1 class="page" style="font-size:24px">${esc(l.title)}</h1>
+      <div class="lesson-eyebrow">Day ${l.day_number} · ${esc(ACADEMY_SECTIONS[l.week_number-1] || "")}</div>
+      <h1 class="page" style="font-size:26px">${esc(l.title)}</h1>
       <div class="info-photo" style="max-width:none;margin:10px 0 18px"><img src="${img(l.cover_seed || ("lesson"+id), 1000, 500)}" alt=""></div>
-      <div class="article">${(l.body || "").split("\n").map(p => `<p>${esc(p)}</p>`).join("")}</div>
+      ${l.excerpt ? `<p class="lesson-lead">${esc(l.excerpt)}</p>` : ""}
+      <div class="article">${renderArticle(l.body)}</div>
       <div class="card" style="margin-top:18px"><div class="section-title" style="margin:0 0 8px"><h2>Your task</h2></div>
         <div class="task ${taskDone ? "done" : ""}" id="task"><span class="box">${taskDone ? "✓" : ""}</span><span class="lab">${esc(l.task || "Reflect on today's lesson.")}</span></div>
         <button class="btn block" id="finish" style="margin-top:14px">${prog[id]?.done ? "✓ Completed" : "Mark lesson complete"}</button></div>`;
