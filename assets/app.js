@@ -116,12 +116,18 @@
   async function vHome() {
     const name = (PROFILE && PROFILE.name) || "there";
     const hero = DATA.workouts.find(w => w.locked) || DATA.workouts[0];
-    const tdone = C.tasks.filter(t => DB.dayGet("tasks")[t.id]).length;
-    const tasksHtml = C.tasks.map(t => { const d = DB.dayGet("tasks")[t.id];
-      return `<div class="task ${d ? "done" : ""}" data-task="${t.id}"><span class="box">${d ? "✓" : ""}</span><span class="lab">${esc(t.label)}</span></div>`; }).join("");
+    let activeFast = null, fastHist = [];
     try { if (!_recipes) _recipes = await DB.recipes(); if (!_week) _week = await ensureWeek(false); } catch (e) { /* plan optional */ }
     const acadCard = await homeAcademyCard();
-    const mMood = ST.latest.mood, mStress = ST.latest.stress;
+    try { [activeFast, fastHist] = await Promise.all([DB.activeFast(), DB.fastingHistory()]); } catch (e) { /* optional */ }
+    // Self-assessment: show today's mood/stress icons
+    const mi = ST.latest.mood ? MOOD_LAB.indexOf(ST.latest.mood) : -1;
+    const si = ST.latest.stress ? STRESS_LAB.indexOf(ST.latest.stress) : -1;
+    const selfSub = mi >= 0 ? `<span style="font-size:22px">${MOOD_EMO[mi]}${si >= 0 ? " " + STRESS_EMO[si] : ""}</span>` : "Log mood &amp; stress";
+    // Fasting: show live/last state
+    let fastSub = "Start a fast";
+    if (activeFast) { const s = (Date.now() - new Date(activeFast.started_at)) / 3600000; fastSub = `⏱ Fasting now · ${Math.floor(s)}h ${Math.floor((s % 1) * 60)}m`; }
+    else { const today = PLAN.isoDate(new Date()); const f = fastHist.find(x => PLAN.isoDate(new Date(x.started_at)) === today); if (f) { const d = (new Date(f.ended_at) - new Date(f.started_at)) / 3600000; fastSub = `✓ Done today · ${Math.floor(d)}h ${Math.round((d % 1) * 60)}m`; } }
     view.innerHTML = `
       <div class="greet"><div class="day">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</div>
         <h2>Good day, ${esc(name)}</h2><p>A little movement today goes a long way.</p></div>
@@ -133,17 +139,15 @@
           <span class="pc-ic">🎁</span>
           <span class="pc-txt"><span class="pc-t">Download Free PDF: Tai Chi Walking</span><span class="pc-s">Click here to download</span></span>
           <span class="pc-dl">⬇</span></a>
-        <div class="card"><div class="section-title" style="margin:0 0 6px"><h2>Today's tasks</h2><span style="color:var(--muted);font-weight:700">${tdone}/${C.tasks.length}</span></div>${tasksHtml}</div>
-      </div><div class="col">
         ${homeMealCard()}
-        ${homeCaloriesCard()}
         ${acadCard}
+      </div><div class="col">
+        ${homeCaloriesCard()}
         <div class="card mini"><div><div style="font-weight:700">Weight</div><div class="v">${ST.latest.weight??"—"} <small>kg</small></div></div><a class="btn ghost" href="#/track/weight">Log</a></div>
         <div class="card mini"><div><div style="font-weight:700">Water</div><div class="v">${ST.latest.water??0} <small>glasses</small></div></div><a class="btn ghost" href="#/track/water">Log</a></div>
-        <div class="card mini"><div><div style="font-weight:700">Self-assessment</div><div class="v" style="font-size:14px;color:var(--muted)">${mMood?`${esc(mMood)} · ${mStress?esc(mStress):"—"}`:"Log mood & stress"}</div></div><a class="btn ghost" href="#/track/mood">Log</a></div>
-        <div class="card mini"><div><div style="font-weight:700">Fasting</div><div class="v" style="font-size:14px;color:var(--muted)">Timed fasting</div></div><a class="btn ghost" href="#/track/fasting">Open</a></div>
+        <div class="card mini"><div><div style="font-weight:700">Self-assessment</div><div class="v" style="font-size:14px;color:var(--muted)">${selfSub}</div></div><a class="btn ghost" href="#/track/mood">Log</a></div>
+        <div class="card mini"><div><div style="font-weight:700">Fasting</div><div class="v" style="font-size:14px;color:var(--muted)">${fastSub}</div></div><a class="btn ghost" href="#/track/fasting">Open</a></div>
       </div></div>`;
-    view.querySelectorAll(".task").forEach(t => t.onclick = () => { DB.dayToggle("tasks", t.dataset.task); vHome(); });
     view.querySelector(".hero-card").onclick = () => location.hash = "#/workout/" + hero.id;
     view.querySelectorAll("[data-mact]").forEach(b => b.onclick = async (e) => {
       e.preventDefault();
