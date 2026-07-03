@@ -124,6 +124,9 @@
     const mi = ST.latest.mood ? MOOD_LAB.indexOf(ST.latest.mood) : -1;
     const si = ST.latest.stress ? STRESS_LAB.indexOf(ST.latest.stress) : -1;
     const selfSub = mi >= 0 ? `<span style="font-size:22px">${MOOD_EMO[mi]}${si >= 0 ? " " + STRESS_EMO[si] : ""}</span>` : "Log mood &amp; stress";
+    const impW = PROFILE && PROFILE.measurement_system === "imperial";
+    const wUnitH = impW ? "lb" : "kg";
+    const wValH = ST.latest.weight != null ? (impW ? Math.round(ST.latest.weight * 2.20462 * 10) / 10 : ST.latest.weight) : "—";
     // Fasting: show live/last state
     let fastSub = "Start a fast";
     if (activeFast) { const s = (Date.now() - new Date(activeFast.started_at)) / 3600000; fastSub = `⏱ Fasting now · ${Math.floor(s)}h ${Math.floor((s % 1) * 60)}m`; }
@@ -143,7 +146,7 @@
         ${acadCard}
       </div><div class="col">
         ${homeCaloriesCard()}
-        <div class="card mini"><div><div style="font-weight:700">Weight</div><div class="v">${ST.latest.weight??"—"} <small>kg</small></div></div><a class="btn ghost" href="#/track/weight">Log</a></div>
+        <div class="card mini"><div><div style="font-weight:700">Weight</div><div class="v">${wValH} <small>${wUnitH}</small></div></div><a class="btn ghost" href="#/track/weight">Log</a></div>
         <div class="card mini"><div><div style="font-weight:700">Water</div><div class="v">${ST.latest.water??0} <small>glasses</small></div></div><a class="btn ghost" href="#/track/water">Log</a></div>
         <div class="card mini"><div><div style="font-weight:700">Balance</div><div class="v">${ST.latest.balance??"—"} <small>/10</small></div></div><a class="btn ghost" href="#/track/balance">Log</a></div>
         <div class="card mini"><div><div style="font-weight:700">Self-assessment</div><div class="v" style="font-size:14px;color:var(--muted)">${selfSub}</div></div><a class="btn ghost" href="#/track/mood">Log</a></div>
@@ -622,12 +625,17 @@
     const t = C.trackers.find(x => x.id === metric); if (!t) return notFound();
     if (t.special === "self") return vSelfAssess();
     if (t.special === "fasting") return vFasting();
+    const isWeight = metric === "weight";
+    const imp = isWeight && PROFILE && PROFILE.measurement_system === "imperial";
+    const wUnit = imp ? "lb" : "kg";
+    const toDisp = kg => imp ? Math.round(kg * 2.20462 * 10) / 10 : Math.round(kg * 10) / 10;
+    const toKg = d => imp ? d / 2.20462 : d;
+    const inpUnit = isWeight ? wUnit : t.unit;
     const input = t.numeric
-      ? `<div class="logger"><input id="val" type="number" inputmode="decimal" placeholder="Enter ${t.label.toLowerCase()} (${t.unit})"></div>`
+      ? `<div class="logger"><input id="val" type="number" inputmode="decimal" placeholder="Enter ${t.label.toLowerCase()} (${inpUnit})"></div>`
       : `<div class="moodrow">${["😟","😕","😐","🙂","😄"].map((m,i)=>`<button data-mood="${i+1}">${m}</button>`).join("")}</div>`;
     const hist = ST.history[metric] || [];
-    const isWeight = metric === "weight";
-    const tgtField = isWeight ? `<label class="fl">Target weight (kg)</label><input id="tgt" class="tin" type="number" inputmode="decimal" value="${PROFILE?.target_weight_kg ?? ""}" placeholder="e.g. 70">` : "";
+    const tgtField = isWeight ? `<label class="fl">Target weight (${wUnit})</label><input id="tgt" class="tin" type="number" inputmode="decimal" value="${PROFILE?.target_weight_kg != null ? toDisp(PROFILE.target_weight_kg) : ""}" placeholder="${imp ? "e.g. 154" : "e.g. 70"}">` : "";
     const trend = (isWeight && hist.length > 1) ? `<div class="sec-label" style="margin:18px 0 8px">TREND</div><div class="card">${trendSvg(hist, PROFILE?.target_weight_kg)}</div>` : "";
     view.innerHTML = `<button class="backlink" onclick="location.hash='#/tracking'">‹ Tracking</button>
       <h1 class="page">${t.icon} ${t.label}</h1>
@@ -635,17 +643,19 @@
       <div class="card">${input}${tgtField}<button class="btn block" id="save" style="margin-top:14px">Save entry</button></div>
       ${trend}
       <div class="sec-label" style="margin:18px 0 8px">HISTORY</div>
-      <div class="hist">${hist.length?hist.map(h=>`<div class="h"><span>${esc(String(h.value))} ${t.unit||""}</span><span style="color:var(--muted)">${new Date(h.at).toLocaleString()}</span></div>`).join(""):'<p class="page-sub">No entries yet.</p>'}</div>`;
+      <div class="hist">${hist.length?hist.map(h=>`<div class="h"><span>${isWeight ? toDisp(parseFloat(h.value)) + " " + wUnit : esc(String(h.value)) + " " + (t.unit||"")}</span><span style="color:var(--muted)">${new Date(h.at).toLocaleString()}</span></div>`).join(""):'<p class="page-sub">No entries yet.</p>'}</div>`;
     let mood = null;
     view.querySelectorAll(".moodrow button").forEach(b => b.onclick = () => { mood = +b.dataset.mood; view.querySelectorAll(".moodrow button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); });
     view.querySelector("#save").onclick = async () => {
       let v = t.numeric ? view.querySelector("#val").value : mood;
       if (t.numeric) { if (!(parseFloat(v) >= 0)) { view.querySelector("#val").focus(); return; } }
       else { if (!v) return; v = ["Very low","Low","Okay","Good","Great"][v-1]; }
-      if (isWeight) { const tg = parseFloat(view.querySelector("#tgt").value); if (tg > 0) { await DB.updateProfile({ target_weight_kg: tg }); if (PROFILE) PROFILE.target_weight_kg = tg; } }
-      await DB.addCheckin(metric, v, t.unit);
-      (ST.history[metric] = ST.history[metric] || []).unshift({ value: v, at: new Date().toISOString() });
-      ST.latest[metric] = v; vTrack(metric);
+      if (isWeight) { const tg = parseFloat(view.querySelector("#tgt").value); if (tg > 0) { const tgKg = Math.round(toKg(tg) * 10) / 10; await DB.updateProfile({ target_weight_kg: tgKg }); if (PROFILE) PROFILE.target_weight_kg = tgKg; } }
+      let storeVal = v;
+      if (isWeight) storeVal = Math.round(toKg(parseFloat(v)) * 10) / 10;
+      await DB.addCheckin(metric, storeVal, isWeight ? "kg" : t.unit);
+      (ST.history[metric] = ST.history[metric] || []).unshift({ value: storeVal, at: new Date().toISOString() });
+      ST.latest[metric] = storeVal; vTrack(metric);
     };
   }
 
