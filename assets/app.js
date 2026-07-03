@@ -235,24 +235,24 @@
 
   function vWalkWorkout(w, id, done, fav, steps) {
     const day = walkDay(w);
-    const s0 = steps[0] || {};
-    const stepRows = steps.map((s, i) => `<button class="wstep${i === 0 ? " on" : ""}" data-i="${i}">
-        <span class="lnum">${String(i + 1).padStart(2, "0")}</span>
-        <span class="ltext"><span class="lt">${esc(s.t)}</span><span class="ls"><span class="badge ${lv(s.lvl)}">${esc(s.lvl || "Beginner")}</span> · ${s.min || ""} min</span></span></button>`).join("");
+    const items = steps.map((s, i) => `<div class="wacc-item${i === 0 ? " open" : ""}">
+        <button class="wacc-head" data-i="${i}">
+          <span class="lnum">${String(i + 1).padStart(2, "0")}</span>
+          <span class="ltext"><span class="lt">${esc(s.t)}</span><span class="ls"><span class="badge ${lv(s.lvl)}">${esc(s.lvl || "Beginner")}</span> · ${s.min || ""} min</span></span>
+          <span class="wacc-chev">›</span></button>
+        <div class="wacc-body">
+          <div class="wacc-img">${s.img ? `<img src="${s.img}" alt="${esc(s.t)}">` : ""}</div>
+          <p class="wacc-desc">${esc(s.desc || "")}</p></div>
+      </div>`).join("");
     view.innerHTML = `<button class="backlink" onclick="history.back()">‹ Back</button>
-      <div class="walkhero"><span class="badge daybadge">Day ${day}</span><img id="wkImg" src="${s0.img || img(w.seed,400,400)}" alt=""></div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px"><span class="badge ${lv(w.level)}">${w.level}</span><h1 class="page" style="margin:0;font-size:24px">${esc(w.title)}</h1><button class="favico" id="favBtn" title="Save">${fav?"♥":"♡"}</button></div>
+      <div class="wk-head"><span class="badge ${lv(w.level)}">${w.level}</span><h1 class="page wk-title">${esc(w.title)}</h1><button class="favico" id="favBtn" title="Save">${fav?"♥":"♡"}</button></div>
       <p class="page-sub">Day ${day} · ${w.min} min · ${steps.length} moves</p>
-      <div class="card walkdesc"><div class="wd-name" id="wkName">${esc(s0.t || "")}</div><p class="wd-text" id="wkDesc">${esc(s0.desc || "Tap a move to see how it's done.")}</p></div>
-      <div class="section-title"><h2>Moves</h2><span style="color:var(--muted);font-weight:700">${steps.length}</span></div>
-      <div class="card listcard walk-steps">${stepRows}</div>
+      <div class="wacc">${items}</div>
       <div class="cta-fixed"><button class="btn block" id="markDone">${done ? "✓ Completed — do it again" : `▶ Start Day ${day}`}</button></div>`;
-    view.querySelectorAll(".wstep").forEach(b => b.onclick = () => {
-      const i = +b.dataset.i, s = steps[i] || {};
-      view.querySelectorAll(".wstep").forEach(x => x.classList.toggle("on", x === b));
-      const im = view.querySelector("#wkImg"); if (im && s.img) im.src = s.img;
-      const nm = view.querySelector("#wkName"); if (nm) nm.textContent = s.t || "";
-      const de = view.querySelector("#wkDesc"); if (de) de.textContent = s.desc || "";
+    view.querySelectorAll(".wacc-head").forEach(b => b.onclick = () => {
+      const item = b.closest(".wacc-item"), wasOpen = item.classList.contains("open");
+      view.querySelectorAll(".wacc-item").forEach(x => x.classList.remove("open"));
+      if (!wasOpen) item.classList.add("open");
     });
     view.querySelector("#markDone").onclick = async () => { const on = !ST.completed[id]; if (on) ST.completed[id] = true; else delete ST.completed[id]; await DB.toggleSession(id, on); vWorkout(id); };
     view.querySelector("#favBtn").onclick = async () => { const on = !ST.favorites[id]; if (on) ST.favorites[id] = true; else delete ST.favorites[id]; await DB.toggleFav(id, on); vWorkout(id); };
