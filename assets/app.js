@@ -157,7 +157,37 @@
   let _mealCat = "all", _mealQ = "";
   let _week = null;         // { startISO, endISO, items:{'date|slot':item}, targets }
   let _selDay = null;       // ISO date currently selected
+  let _planSub = "meals";   // meals | nutrition | groceries
   let _recipeCtx = null;    // { recipe, date, slot } — set when opening a recipe from the plan
+  const FIBER_GOAL = { male: 30, female: 25, unknown: 25 };
+  const round1 = x => Math.round(x * 10) / 10;
+
+  function donut(val, max, big, unit) {
+    const R = 34, C = 2 * Math.PI * R, pct = max ? Math.max(0, Math.min(1, val / max)) : 0, dash = C * pct;
+    return `<svg viewBox="0 0 80 80" class="donut">
+      <circle cx="40" cy="40" r="${R}" fill="none" stroke="#e3ece4" stroke-width="8"/>
+      <circle cx="40" cy="40" r="${R}" fill="none" stroke="var(--primary)" stroke-width="8" stroke-linecap="round"
+        stroke-dasharray="${dash.toFixed(1)} ${(C-dash).toFixed(1)}" transform="rotate(-90 40 40)"/>
+      <text x="40" y="42" text-anchor="middle" class="dnum2">${big}</text>
+      <text x="40" y="54" text-anchor="middle" class="dunit">${unit}</text></svg>`;
+  }
+  function nutritionHtml(dateISO, dailyKcal) {
+    const d = { kcal: 0, fiber: 0, carbs: 0, protein: 0, fat: 0 };
+    SLOTS.forEach(slot => {
+      const it = _week.items[dateISO + "|" + slot];
+      if (it && it.status === "done") { const r = recipeById(it.recipe_id); if (r) { d.kcal += r.kcal||0; d.fiber += r.fiber||0; d.carbs += r.carbs||0; d.protein += r.protein||0; d.fat += r.fat||0; } }
+    });
+    const kGoal = dailyKcal || 2000;
+    const fGoal = FIBER_GOAL[(PROFILE && (PROFILE.gender||"").toLowerCase())] || 25;
+    return `<div class="nutri-cards">
+      <div class="card nutri">${donut(d.kcal, kGoal, Math.round(d.kcal), "KCAL")}
+        <div class="ninfo"><div class="nlabel">CALORIES</div><div class="nval">${Math.round(d.kcal)} of ${kGoal} kcal</div></div></div>
+      <div class="card nutri">${donut(d.fiber, fGoal, round1(d.fiber), "G")}
+        <div class="ninfo"><div class="nlabel">FIBER</div><div class="nval">${round1(d.fiber)} of ${fGoal} g fiber</div></div></div>
+    </div>
+    <div class="card nutri-macros"><div><b>${d.carbs}g</b><span>CARBS</span></div><div><b>${d.protein}g</b><span>PROTEIN</span></div><div><b>${d.fat}g</b><span>FAT</span></div></div>
+    <p class="nutri-note">Totals count meals you've marked <b>done</b>. Skipped meals aren't included.</p>`;
+  }
   const SLOTS = ["breakfast", "lunch", "dinner", "snack"];
   const CAP = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -249,13 +279,19 @@
           <div class="mc-body"><span class="badge beg">${CAP(slot)}</span><div class="n">${esc(r.title)}</div>${r.description?`<div class="mc-desc">${esc(r.description)}</div>`:""}<div class="s">${r.minutes} min &middot; ${r.kcal} kcal${it.kcal_target?` &middot; target ~${it.kcal_target}`:""}</div></div></div>${footer}</div>`;
       }).join("");
       const selDate = new Date(_selDay + "T00:00:00");
+      const dayLabel = selDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      let subHtml;
+      if (_planSub === "nutrition") subHtml = `<h2 class="today-h">${dayLabel}</h2>${nutritionHtml(_selDay, t.daily)}`;
+      else if (_planSub === "groceries") subHtml = `<div class="soon"><div class="big">&#128722;</div><p>Auto-built grocery lists from your week are coming soon.</p></div>`;
+      else subHtml = `<h2 class="today-h">${dayLabel}</h2>${rows}`;
+      const subBtn = (s, label) => `<button class="${_planSub===s?'on':''}" data-s="${s}">${label}</button>`;
       view.innerHTML = `<div class="mealhdr"><h1 class="page" style="margin:0">Meal plan</h1><button class="regen" id="regen">&#8635; Regenerate</button></div>
         ${tabs}
         <div class="target-card"><div class="tc-main">${targetLine}</div><div class="tc-sub">Meals tuned to a gentle, steady deficit. Guidance only, not medical advice.</div></div>
         ${note}
         <div class="daystrip">${strip}</div>
-        <div class="subtabs"><button class="on" data-s="meals">Meals</button><button data-s="nutrition">Nutrition</button><button data-s="groceries">Groceries</button></div>
-        <div id="subview"><h2 class="today-h">${selDate.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</h2>${rows}</div>`;
+        <div class="subtabs">${subBtn("meals","Meals")}${subBtn("nutrition","Nutrition")}${subBtn("groceries","Groceries")}</div>
+        <div id="subview">${subHtml}</div>`;
       view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/meals/" + b.dataset.t);
       view.querySelector("#regen").onclick = async () => {
         if (!confirm("Regenerate this week's plan from your current weight? This replaces the current week.")) return;
@@ -263,30 +299,27 @@
         _week = await ensureWeek(true); renderPlan();
       };
       view.querySelectorAll(".daychip").forEach(b => b.onclick = () => { _selDay = b.dataset.day; renderPlan(); });
-      view.querySelectorAll(".subtabs button").forEach(b => b.onclick = () => {
-        view.querySelectorAll(".subtabs button").forEach(x => x.classList.toggle("on", x === b));
-        const sv = view.querySelector("#subview");
-        if (b.dataset.s === "meals") { renderPlan(); }
-        else sv.innerHTML = `<div class="soon"><div class="big">${b.dataset.s==='nutrition'?'&#128202;':'&#128722;'}</div><p>${b.dataset.s==='nutrition'?'Nutrition totals vs. your daily target are coming soon.':'Auto-built grocery lists from your week are coming soon.'}</p></div>`;
-      });
-      view.querySelectorAll(".meal-card .mc-top").forEach(el => el.onclick = () => { const c = el.closest(".meal-card"); _recipeCtx = { recipe: c.dataset.id, date: _selDay, slot: c.dataset.slot }; location.hash = "#/recipe/" + c.dataset.id; });
-      view.querySelectorAll(".mc-actions button, .mc-state[data-slot]").forEach(b => b.onclick = async (e) => {
-        e.stopPropagation();
-        const slot = b.dataset.slot, act = b.dataset.act, key = _selDay + "|" + slot, it = _week.items[key];
-        if (!it) return;
-        if (act === "done" || act === "skip" || act === "reset") {
-          const status = act === "reset" ? "pending" : act === "done" ? "done" : "skipped";
-          it.status = status; renderPlan();
-          await DB.setPlanStatus(_selDay, slot, status);
-        } else if (act === "change") {
-          const tgt = it.kcal_target || 0;
-          const cands = _recipes.filter(r => r.meal_type === slot).sort((a, c) => Math.abs((a.kcal||0)-tgt) - Math.abs((c.kcal||0)-tgt));
-          const idx = Math.max(0, cands.findIndex(r => r.id === it.recipe_id));
-          const next = cands[(idx + 1) % cands.length];
-          it.recipe_id = next.id; it.status = "pending"; renderPlan();
-          await DB.changePlanRecipe(_selDay, slot, next.id);
-        }
-      });
+      view.querySelectorAll(".subtabs button").forEach(b => b.onclick = () => { _planSub = b.dataset.s; renderPlan(); });
+      if (_planSub === "meals") {
+        view.querySelectorAll(".meal-card .mc-top").forEach(el => el.onclick = () => { const c = el.closest(".meal-card"); _recipeCtx = { recipe: c.dataset.id, date: _selDay, slot: c.dataset.slot }; location.hash = "#/recipe/" + c.dataset.id; });
+        view.querySelectorAll(".mc-actions button, .mc-state[data-slot]").forEach(b => b.onclick = async (e) => {
+          e.stopPropagation();
+          const slot = b.dataset.slot, act = b.dataset.act, key = _selDay + "|" + slot, it = _week.items[key];
+          if (!it) return;
+          if (act === "done" || act === "skip" || act === "reset") {
+            const status = act === "reset" ? "pending" : act === "done" ? "done" : "skipped";
+            it.status = status; renderPlan();
+            await DB.setPlanStatus(_selDay, slot, status);
+          } else if (act === "change") {
+            const tgt = it.kcal_target || 0;
+            const cands = _recipes.filter(r => r.meal_type === slot).sort((a, c) => Math.abs((a.kcal||0)-tgt) - Math.abs((c.kcal||0)-tgt));
+            const idx = Math.max(0, cands.findIndex(r => r.id === it.recipe_id));
+            const next = cands[(idx + 1) % cands.length];
+            it.recipe_id = next.id; it.status = "pending"; renderPlan();
+            await DB.changePlanRecipe(_selDay, slot, next.id);
+          }
+        });
+      }
     }
     renderPlan();
   }
