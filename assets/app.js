@@ -235,10 +235,11 @@
 
   function vAccWorkout(w, id, done, fav, steps) {
     const isWalk = w.cat === "Tai Chi Walking";
+    const hasVideo = steps.some(s => s.video);
     const day = isWalk ? walkDay(w) : 0;
     const items = steps.map((s, i) => {
       let body;
-      if (s.video) body = `<div class="wacc-video"><video controls playsinline preload="metadata"><source src="${s.video}" type="video/mp4"></video></div>${s.desc ? `<p class="wacc-desc below">${esc(s.desc)}</p>` : ""}`;
+      if (s.video) body = `<div class="wacc-video"><video controls playsinline preload="metadata"><source src="${s.video}" type="video/mp4"></video></div>${s.desc ? `<p class="wacc-desc below">${esc(s.desc)}</p>` : ""}<div class="wacc-foot"><button class="wacc-skip" data-i="${i}">Skip this move ⏭</button></div>`;
       else if (s.img) body = `<div class="wacc-2col"><div class="wacc-img"><img src="${s.img}" alt="${esc(s.t)}"></div><p class="wacc-desc">${esc(s.desc || "")}</p></div>`;
       else body = `<p class="wacc-desc below">${esc(s.desc || "")}</p>`;
       return `<div class="wacc-item${i === 0 ? " open" : ""}">
@@ -249,22 +250,54 @@
         <div class="wacc-body">${body}</div>
       </div>`;
     }).join("");
+    const startLabel = done ? "✓ Completed — do it again" : (isWalk && !hasVideo ? `▶ Start Day ${day}` : "▶ Start session");
     view.innerHTML = `<button class="backlink" onclick="history.back()">‹ Back</button>
       <div class="wk-head"><span class="badge ${lv(w.level)}">${w.level}</span><h1 class="page wk-title">${esc(w.title)}</h1><button class="favico" id="favBtn" title="Save">${fav?"♥":"♡"}</button></div>
       <p class="page-sub">${isWalk ? `Day ${day} · ` : ""}${w.min} min · ${steps.length} moves</p>
-      <div class="wacc">${items}</div>
-      <div class="cta-fixed"><button class="btn block" id="markDone">${done ? "✓ Completed — do it again" : (isWalk ? `▶ Start Day ${day}` : "▶ Start session")}</button></div>`;
+      <div class="wacc" id="wacc">${items}</div>
+      <div class="cta-fixed"><button class="btn block" id="markDone">${startLabel}</button></div>`;
+    _sessionRunning = false;
+    const wacc = view.querySelector("#wacc");
+    const els = () => view.querySelectorAll(".wacc-item");
+    const played = new Set();
+    const openMove = (i, play) => {
+      view.querySelectorAll("video").forEach(v => v.pause());
+      els().forEach((x, k) => x.classList.toggle("open", k === i));
+      const it = els()[i]; if (!it) return;
+      it.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (play) { const v = it.querySelector("video"); if (v) { try { v.currentTime = 0; } catch (e) {} const p = v.play(); if (p && p.catch) p.catch(() => {}); } else advance(i); }
+    };
+    const advance = (i) => {
+      played.add(i);
+      if (played.size >= steps.length) return finish();
+      let n = -1;
+      for (let k = i + 1; k < steps.length; k++) if (!played.has(k)) { n = k; break; }
+      if (n < 0) for (let k = 0; k < steps.length; k++) if (!played.has(k)) { n = k; break; }
+      if (n < 0) return finish();
+      openMove(n, true);
+    };
+    const finish = async () => {
+      _sessionRunning = false; if (wacc) wacc.classList.remove("playing");
+      const btn = view.querySelector("#markDone"); if (btn) btn.textContent = "✓ Completed — do it again";
+      if (!ST.completed[id]) { ST.completed[id] = true; try { await DB.toggleSession(id, true); } catch (e) {} }
+    };
     view.querySelectorAll(".wacc-head").forEach(b => b.onclick = () => {
       const item = b.closest(".wacc-item"), wasOpen = item.classList.contains("open");
       view.querySelectorAll("video").forEach(v => v.pause());
-      view.querySelectorAll(".wacc-item").forEach(x => x.classList.remove("open"));
+      els().forEach(x => x.classList.remove("open"));
       if (!wasOpen) item.classList.add("open");
     });
-    view.querySelector("#markDone").onclick = async () => { const on = !ST.completed[id]; if (on) ST.completed[id] = true; else delete ST.completed[id]; await DB.toggleSession(id, on); vWorkout(id); };
+    els().forEach((it, i) => { const v = it.querySelector("video"); if (v) v.addEventListener("ended", () => { if (_sessionRunning) advance(i); }); });
+    view.querySelectorAll(".wacc-skip").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (_sessionRunning) advance(+b.dataset.i); });
+    view.querySelector("#markDone").onclick = async () => {
+      if (hasVideo) { played.clear(); _sessionRunning = true; if (wacc) wacc.classList.add("playing"); const btn = view.querySelector("#markDone"); if (btn) btn.textContent = "▶ Playing session…"; openMove(0, true); }
+      else { const on = !ST.completed[id]; if (on) ST.completed[id] = true; else delete ST.completed[id]; await DB.toggleSession(id, on); vWorkout(id); }
+    };
     view.querySelector("#favBtn").onclick = async () => { const on = !ST.favorites[id]; if (on) ST.favorites[id] = true; else delete ST.favorites[id]; await DB.toggleFav(id, on); vWorkout(id); };
   }
 
   let _nav = 0;             // bumped on every route() — async views bail if it changes mid-load
+  let _sessionRunning = false;   // true while a video workout is auto-playing move-by-move
   // ---------- Meals ----------
   let _recipes = null;
   let _mealCat = "all", _mealQ = "";
