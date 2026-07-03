@@ -99,10 +99,11 @@ window.PLAN = (function () {
     return items;
   }
 
-  // Monday of the week containing `d`
+  // Sunday of the week containing `d` (US week convention)
   function weekStartOf(d) {
-    const x = new Date(d); const day = (x.getDay() + 6) % 7; // Mon=0
-    x.setDate(x.getDate() - day); x.setHours(0, 0, 0, 0); return x;
+    const x = new Date(d);
+    x.setDate(x.getDate() - x.getDay()); // getDay() 0=Sun
+    x.setHours(0, 0, 0, 0); return x;
   }
 
   return { targets, generateWeek, weekStartOf, isoDate, addDays, ageFromBand };
