@@ -121,7 +121,7 @@
         return `<div class="section-title"><h2>${esc(cat)}</h2></div><div class="${active==='All'?'row-scroll':'grid-cards'}">${items.map(wcard).join("")}</div>`;
       }).join("");
       const coming = comingCats.length ? `<div class="section-title"><h2>Coming soon</h2></div>
-        <div class="coming-row">${comingCats.map(c => `<div class="coming-chip"><span>${esc(c)}</span><span class="cc-tag">Soon</span></div>`).join("")}</div>` : "";
+        <div class="coming-row">${comingCats.map(c => `<div class="coming-chip"><span>${esc(c)}</span></div>`).join("")}</div>` : "";
       body = `<div class="filters">${chips.map(c => `<button data-c="${c}" class="${c===active?'on':''}">${c}</button>`).join("")}</div>${sections}${coming}`;
     } else {
       const total = DATA.plan.length, done = DATA.plan.filter(p => DB.dayGet("plan")[p.id]).length;
@@ -659,11 +659,10 @@
 
       <div class="card listcard" style="margin-top:16px">
         <a class="lrow" href="#/subscription"><span>Manage subscription</span><span class="chev">›</span></a>
-        <a class="lrow" href="#/install"><span>Install the app</span><span class="chev">›</span></a>
       </div>
 
       <div class="card listcard" style="margin-top:16px">
-        <div class="sec-label" style="padding:0 4px 6px">HELP &amp; LEGAL</div>
+        <div class="sec-label" style="padding:18px 18px 0">HELP &amp; LEGAL</div>
         <a class="lrow" href="https://taimotion.com" target="_blank"><span>Privacy Policy</span><span class="chev">›</span></a>
         <a class="lrow" href="https://taimotion.com" target="_blank"><span>Terms of Service</span><span class="chev">›</span></a>
         <a class="lrow" href="mailto:hello@taimotion.com"><span>Support</span><span class="chev">›</span></a>
@@ -735,7 +734,7 @@
   let _lessons = null;
   const ACADEMY_SECTIONS = ["Foundations & the Daily Habit", "Steady & Strong: Balance", "Move Freely: Joints & Mobility", "Calm Mind, Clear Focus", "Aging Well: Everyday Habits"];
   const ACADEMY_CHIPS = ["Foundations", "Balance", "Mobility", "Calm & Focus", "Aging Well"];
-  const ACADEMY_UNLOCK_ALL = true;   // TEMP: preview all lessons unlocked
+  const ACADEMY_UNLOCK_ALL = false;  // sequential: 1 lesson unlocks per day
   let _acadCat = "all";
   function renderArticle(body) {
     let html = "", inList = false;
