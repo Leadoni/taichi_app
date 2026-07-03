@@ -260,37 +260,50 @@
     const wacc = view.querySelector("#wacc");
     const els = () => view.querySelectorAll(".wacc-item");
     const played = new Set();
-    const openMove = (i, play) => {
+    const clearInterim = () => { if (_interimTimer) { clearInterval(_interimTimer); _interimTimer = null; } const el = document.getElementById("interim"); if (el) el.remove(); };
+    const nextUnplayed = () => { for (let k = 0; k < steps.length; k++) if (!played.has(k)) return k; return -1; };
+    const playMove = (i) => {
       view.querySelectorAll("video").forEach(v => v.pause());
       els().forEach((x, k) => x.classList.toggle("open", k === i));
       const it = els()[i]; if (!it) return;
       it.scrollIntoView({ behavior: "smooth", block: "center" });
-      if (play) { const v = it.querySelector("video"); if (v) { try { v.currentTime = 0; } catch (e) {} const p = v.play(); if (p && p.catch) p.catch(() => {}); } else advance(i); }
-    };
-    const advance = (i) => {
-      played.add(i);
-      if (played.size >= steps.length) return finish();
-      let n = -1;
-      for (let k = i + 1; k < steps.length; k++) if (!played.has(k)) { n = k; break; }
-      if (n < 0) for (let k = 0; k < steps.length; k++) if (!played.has(k)) { n = k; break; }
-      if (n < 0) return finish();
-      openMove(n, true);
+      const v = it.querySelector("video");
+      if (v) { try { v.currentTime = 0; } catch (e) {} const p = v.play(); if (p && p.catch) p.catch(() => {}); }
+      else afterMove(i);
     };
     const finish = async () => {
-      _sessionRunning = false; if (wacc) wacc.classList.remove("playing");
+      clearInterim(); _sessionRunning = false; if (wacc) wacc.classList.remove("playing");
+      view.querySelectorAll("video").forEach(v => v.pause());
       const btn = view.querySelector("#markDone"); if (btn) btn.textContent = "✓ Completed — do it again";
       if (!ST.completed[id]) { ST.completed[id] = true; try { await DB.toggleSession(id, true); } catch (e) {} }
     };
+    const showInterim = (i) => {
+      clearInterim();
+      view.querySelectorAll("video").forEach(v => v.pause());
+      let count = 3;
+      const el = document.createElement("div"); el.id = "interim"; el.className = "interim";
+      el.innerHTML = `<button class="interim-x" aria-label="End session">✕</button>
+        <div class="interim-eyebrow">COMING UP</div>
+        <div class="interim-ring"><span id="interimCount">${count}</span></div>
+        <div class="interim-title">${esc(steps[i].t)}</div>
+        <div class="interim-sub">Move ${i + 1} of ${steps.length} · get ready</div>
+        <button class="interim-skip">Skip move</button>`;
+      document.body.appendChild(el);
+      el.querySelector(".interim-x").onclick = () => { clearInterim(); _sessionRunning = false; if (wacc) wacc.classList.remove("playing"); const btn = view.querySelector("#markDone"); if (btn && !ST.completed[id]) btn.textContent = "▶ Start session"; };
+      el.querySelector(".interim-skip").onclick = () => { clearInterim(); played.add(i); const n = nextUnplayed(); if (n < 0) return finish(); showInterim(n); };
+      _interimTimer = setInterval(() => { count--; if (count <= 0) { clearInterim(); playMove(i); } else { const c = document.getElementById("interimCount"); if (c) c.textContent = count; } }, 1000);
+    };
+    function afterMove(i) { played.add(i); const n = nextUnplayed(); if (n < 0) return finish(); showInterim(n); }
     view.querySelectorAll(".wacc-head").forEach(b => b.onclick = () => {
       const item = b.closest(".wacc-item"), wasOpen = item.classList.contains("open");
       view.querySelectorAll("video").forEach(v => v.pause());
       els().forEach(x => x.classList.remove("open"));
       if (!wasOpen) item.classList.add("open");
     });
-    els().forEach((it, i) => { const v = it.querySelector("video"); if (v) v.addEventListener("ended", () => { if (_sessionRunning) advance(i); }); });
-    view.querySelectorAll(".wacc-skip").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (_sessionRunning) advance(+b.dataset.i); });
+    els().forEach((it, i) => { const v = it.querySelector("video"); if (v) v.addEventListener("ended", () => { if (_sessionRunning) afterMove(i); }); });
+    view.querySelectorAll(".wacc-skip").forEach(b => b.onclick = (e) => { e.stopPropagation(); if (_sessionRunning) afterMove(+b.dataset.i); });
     view.querySelector("#markDone").onclick = async () => {
-      if (hasVideo) { played.clear(); _sessionRunning = true; if (wacc) wacc.classList.add("playing"); const btn = view.querySelector("#markDone"); if (btn) btn.textContent = "▶ Playing session…"; openMove(0, true); }
+      if (hasVideo) { played.clear(); _sessionRunning = true; if (wacc) wacc.classList.add("playing"); const btn = view.querySelector("#markDone"); if (btn) btn.textContent = "▶ Playing session…"; playMove(0); }
       else { const on = !ST.completed[id]; if (on) ST.completed[id] = true; else delete ST.completed[id]; await DB.toggleSession(id, on); vWorkout(id); }
     };
     view.querySelector("#favBtn").onclick = async () => { const on = !ST.favorites[id]; if (on) ST.favorites[id] = true; else delete ST.favorites[id]; await DB.toggleFav(id, on); vWorkout(id); };
@@ -298,6 +311,7 @@
 
   let _nav = 0;             // bumped on every route() — async views bail if it changes mid-load
   let _sessionRunning = false;   // true while a video workout is auto-playing move-by-move
+  let _interimTimer = null;      // countdown interval for the "coming up" interstitial
   // ---------- Meals ----------
   let _recipes = null;
   let _mealCat = "all", _mealQ = "";
@@ -1124,6 +1138,9 @@
   function route() {
     if (!DATA) return;
     _nav++;
+    if (_interimTimer) { clearInterval(_interimTimer); _interimTimer = null; }
+    const _iv = document.getElementById("interim"); if (_iv) _iv.remove();
+    _sessionRunning = false;
     const [r, a] = (location.hash.replace(/^#\//, "") || "home").split("/");
     const navMap = { workout: "exercises", track: "tracking", profile: "", subscription: "", install: "",
       lesson: "academy", challenge: "challenges", recipe: "meals" };
