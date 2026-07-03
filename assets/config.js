@@ -1,10 +1,23 @@
-/* Theme: default = brown. ?t=g -> green, ?t=b -> brown. Choice persists. */
+/* Theme: default = brown. ?t=g -> green, ?t=b -> brown.
+ * Persists via a cookie on .taimotion.com (shared with the funnel domain) + localStorage,
+ * so a green/brown journey started on taimotion.com carries into the app. */
 (function () {
   try {
-    const t = new URLSearchParams(location.search).get("t");
-    if (t === "g") localStorage.setItem("tm_theme", "green");
-    else if (t === "b") localStorage.setItem("tm_theme", "brown");
-    const theme = localStorage.getItem("tm_theme") === "green" ? "green" : "brown";
+    const readCookie = () => { const m = document.cookie.match(/(?:^|;\s*)tm_theme=(green|brown)/); return m ? m[1] : null; };
+    const writeCookie = (v) => {
+      const base = "; path=/; max-age=31536000; samesite=lax";
+      document.cookie = "tm_theme=" + v + base;
+      if (/taimotion\.com$/.test(location.hostname)) document.cookie = "tm_theme=" + v + "; domain=.taimotion.com" + base;
+    };
+    const p = new URLSearchParams(location.search).get("t");
+    let theme;
+    if (p === "g" || p === "b") {
+      theme = p === "g" ? "green" : "brown";
+      writeCookie(theme);
+      try { localStorage.setItem("tm_theme", theme); } catch (e) {}
+    } else {
+      theme = readCookie() || (() => { try { return localStorage.getItem("tm_theme"); } catch (e) { return null; } })() || "brown";
+    }
     document.documentElement.setAttribute("data-theme", theme);
     const applyLogo = () => document.querySelectorAll("img.logo").forEach(i => i.setAttribute("src", theme === "green" ? "assets/logo.webp" : "assets/logo2.webp"));
     if (document.readyState !== "loading") applyLogo();
