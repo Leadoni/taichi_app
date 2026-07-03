@@ -245,7 +245,7 @@
           ? `<div class="mc-state skip" data-slot="${slot}" data-act="reset">&#9655; Skipped</div>`
           : `<div class="mc-actions"><button data-slot="${slot}" data-act="done">&#10003; Done</button><button data-slot="${slot}" data-act="change">&#8635; Change</button><button data-slot="${slot}" data-act="skip">&#9655; Skip</button></div>`;
         return `<div class="meal-card" data-id="${r.id}"><div class="mc-top"><img src="${img(r.image_seed,240,180)}" alt="">
-          <div class="mc-body"><span class="badge beg">${CAP(slot)}</span><div class="n">${esc(r.title)}</div><div class="s">${r.minutes} min &middot; ${r.kcal} kcal${it.kcal_target?` &middot; target ~${it.kcal_target}`:""}</div></div></div>${footer}</div>`;
+          <div class="mc-body"><span class="badge beg">${CAP(slot)}</span><div class="n">${esc(r.title)}</div>${r.description?`<div class="mc-desc">${esc(r.description)}</div>`:""}<div class="s">${r.minutes} min &middot; ${r.kcal} kcal${it.kcal_target?` &middot; target ~${it.kcal_target}`:""}</div></div></div>${footer}</div>`;
       }).join("");
       const selDate = new Date(_selDay + "T00:00:00");
       view.innerHTML = `<div class="mealhdr"><h1 class="page" style="margin:0">Meal plan</h1><button class="regen" id="regen">&#8635; Regenerate</button></div>
@@ -302,6 +302,7 @@
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="badge beg">${esc(r.meal_type)}</span><h1 class="page" style="margin:0;font-size:24px">${esc(r.title)}</h1>
         <button class="favico" id="favBtn">${fav?"♥":"♡"}</button></div>
       <p class="page-sub">${r.minutes} min · ${r.kcal} kcal · ${r.servings} servings</p>
+      ${r.description ? `<p class="recipe-desc">${esc(r.description)}</p>` : ""}
       <div class="macros"><div><b>${r.kcal}</b><span>kcal</span></div><div><b>${r.protein}g</b><span>Protein</span></div><div><b>${r.carbs}g</b><span>Carbs</span></div><div><b>${r.fat}g</b><span>Fat</span></div><div><b>${r.fiber||0}g</b><span>Fiber</span></div></div>
       <div class="section-title"><h2>Ingredients</h2></div><div class="card"><ul class="ing-list">${ing}</ul></div>
       <div class="section-title"><h2>Instructions</h2></div><div class="card listcard">${ins}</div>

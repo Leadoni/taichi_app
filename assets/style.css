@@ -244,6 +244,8 @@ h1.page{font-size:28px;font-weight:800;margin:0 0 4px}
 .mc-state{padding:12px;text-align:center;font-weight:700;font-size:14px;border-top:1px solid var(--line);cursor:pointer}
 .mc-state.done{background:var(--primary-soft,#eaf3ec);color:var(--primary-dark,#3a6b49)}
 .mc-state.skip{background:#f1f3f2;color:var(--muted,#6b7a70)}
+.mc-desc{font-size:13px;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recipe-desc{font-size:15px;color:#34433b;margin:2px 0 14px;line-height:1.4}
 
 /* Meal plan — header, target, week strip, subtabs */
 .mealhdr{display:flex;align-items:center;justify-content:space-between;gap:12px}
