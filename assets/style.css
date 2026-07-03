@@ -338,3 +338,13 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .groc-item .gi-amt{font-weight:700;min-width:70px;color:var(--primary-dark);font-size:14px}
 .groc-item .gi-name{flex:1;text-transform:capitalize}
 .groc-item.got .gi-name,.groc-item.got .gi-amt{color:var(--muted);text-decoration:line-through}
+
+/* Groceries — print/email toolbar */
+.groc-tools{display:flex;gap:10px;margin-bottom:12px}
+.groc-btn{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:9px 16px;font-weight:600;font-size:14px;color:var(--ink);cursor:pointer}
+.groc-btn:hover{background:var(--primary-soft);border-color:var(--primary)}
+.groc-email{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.groc-email input{flex:1;min-width:180px;border:1.5px solid var(--line);border-radius:10px;padding:11px 14px;font-size:15px;font-family:var(--sans);outline:none;color:var(--ink)}
+.groc-email input:focus{border-color:var(--primary)}
+.groc-email .btn{padding:11px 20px;font-size:15px}
+.groc-email-msg{flex-basis:100%;font-size:13px;color:var(--muted)}

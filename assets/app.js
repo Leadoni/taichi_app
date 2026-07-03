@@ -267,6 +267,31 @@
     }));
     return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
   }
+  function grocLines() {
+    return buildGroceries([..._grocDays].sort()).map(g => { const f = fmtLine(g); return (f.amt ? f.amt + " " : "") + f.name; });
+  }
+  function printGroceries() {
+    const lines = grocLines(); if (!lines.length) return;
+    const w = window.open("", "_blank", "width=620,height=820");
+    if (!w) { alert("Please allow pop-ups to print your list."); return; }
+    const rows = lines.map(l => `<li><span class="cb"></span>${esc(l)}</li>`).join("");
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Grocery list — Tai Motion</title>
+      <style>body{font-family:Georgia,'Times New Roman',serif;color:#2a2319;padding:36px;max-width:560px;margin:0 auto}
+      h1{font-size:24px;font-weight:500;margin:0 0 4px}p{color:#9a8f84;margin:0 0 18px;font-size:14px}
+      ul{padding:0;margin:0}li{list-style:none;padding:9px 2px;border-bottom:1px solid #eadfd2;font-size:16px}
+      .cb{display:inline-block;width:15px;height:15px;border:1.5px solid #b7a894;border-radius:4px;margin-right:12px;vertical-align:-2px}
+      @media print{body{padding:16px}}</style></head><body>
+      <h1>Tai Motion — Grocery list</h1><p>${_grocDays.size} day${_grocDays.size===1?'':'s'} · ${lines.length} item${lines.length===1?'':'s'}</p>
+      <ul>${rows}</ul>
+      <script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>`);
+    w.document.close();
+  }
+  function emailGroceries(to) {
+    const lines = grocLines();
+    const subject = encodeURIComponent("Your Tai Motion grocery list");
+    const body = encodeURIComponent("Grocery list (" + _grocDays.size + " day" + (_grocDays.size === 1 ? "" : "s") + "):\n\n" + lines.map(l => "☐ " + l).join("\n") + "\n\n— Tai Motion");
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+  }
   function weekDates() { return Array.from({ length: 7 }, (_, i) => PLAN.isoDate(PLAN.addDays(new Date(_week.startISO + "T00:00:00"), i))); }
   function groceriesHtml() {
     const wd = weekDates();
@@ -278,8 +303,18 @@
     const items = list.length ? list.map(g => { const f = fmtLine(g), tk = !!_grocTick[g.name];
       return `<label class="groc-item ${tk?'got':''}"><input type="checkbox" data-name="${esc(g.name)}" ${tk?'checked':''}><span class="gi-amt">${esc(f.amt)}</span><span class="gi-name">${esc(f.name)}</span></label>`; }).join("")
       : `<p class="page-sub">Select at least one day to build your list.</p>`;
+    const tools = list.length ? `<div class="groc-tools">
+        <button class="groc-btn" id="grocPrint">🖨 Print</button>
+        <button class="groc-btn" id="grocEmailBtn">✉ Email list</button>
+      </div>
+      <div class="groc-email" id="grocEmail" hidden>
+        <input id="grocEmailInput" type="email" placeholder="name@example.com" value="${esc(PROFILE && PROFILE.email || "")}">
+        <button class="btn" id="grocEmailSend">Send</button>
+        <div class="groc-email-msg" id="grocEmailMsg"></div>
+      </div>` : "";
     return `<div class="groc"><div class="groc-lbl">Include days</div><div class="groc-days">${chips}</div>
       ${list.length ? `<div class="groc-count">${list.length} item${list.length===1?'':'s'} across ${_grocDays.size} day${_grocDays.size===1?'':'s'}</div>` : ""}
+      ${tools}
       <div class="groc-list">${items}</div></div>`;
   }
 
@@ -414,6 +449,16 @@
           localStorage.setItem("groc_" + _week.startISO, JSON.stringify(_grocTick));
           cb.closest(".groc-item").classList.toggle("got", cb.checked);
         });
+        const pb = view.querySelector("#grocPrint"); if (pb) pb.onclick = printGroceries;
+        const eb = view.querySelector("#grocEmailBtn"), box = view.querySelector("#grocEmail");
+        if (eb) eb.onclick = () => { box.hidden = !box.hidden; if (!box.hidden) view.querySelector("#grocEmailInput").focus(); };
+        const es = view.querySelector("#grocEmailSend");
+        if (es) es.onclick = () => {
+          const inp = view.querySelector("#grocEmailInput"), msg = view.querySelector("#grocEmailMsg");
+          const v = inp.value.trim();
+          if (!/^\S+@\S+\.\S+$/.test(v)) { msg.textContent = "Please enter a valid email address."; msg.style.color = "var(--accent)"; inp.focus(); return; }
+          emailGroceries(v); msg.textContent = "Opening your email app…"; msg.style.color = "var(--muted)";
+        };
       }
       if (_planSub === "meals") {
         view.querySelectorAll(".meal-card .mc-top").forEach(el => el.onclick = () => { const c = el.closest(".meal-card"); _recipeCtx = { recipe: c.dataset.id, date: _selDay, slot: c.dataset.slot }; location.hash = "#/recipe/" + c.dataset.id; });
