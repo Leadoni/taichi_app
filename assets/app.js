@@ -14,7 +14,7 @@
   const NAV = [
     { id: "home", label: "Home", icon: "🏠" }, { id: "meals", label: "Meals", icon: "🍽️" },
     { id: "exercises", label: "Exercises", icon: "🧘" }, { id: "tracking", label: "Tracking", icon: "📈" },
-    { id: "stress", label: "Stress release", icon: "🌬️" }, { id: "academy", label: "Academy", icon: "📖" },
+    { id: "academy", label: "Academy", icon: "📖" },
     { id: "challenges", label: "Challenges", icon: "🏆" }, { id: "favorites", label: "Favorites", icon: "♡" },
   ];
   const MOBILE_NAV = ["home", "exercises", "meals", "tracking", "academy"];
@@ -110,13 +110,19 @@
     const tabs = `<div class="tabs"><button data-t="workouts" class="${tab==='workouts'?'on':''}">Workouts</button><button data-t="plan" class="${tab==='plan'?'on':''}">Plan</button></div>`;
     let body = "";
     if (tab === "workouts") {
-      const active = sessionStorage.getItem("exfilter") || "All";
-      const chips = ["All", ...DATA.categories];
-      body = `<div class="filters">${chips.map(c => `<button data-c="${c}" class="${c===active?'on':''}">${c}</button>`).join("")}</div>` +
-        (active === "All" ? DATA.categories : [active]).map(cat => {
-          const items = DATA.workouts.filter(w => w.cat === cat); if (!items.length) return "";
-          return `<div class="section-title"><h2>${esc(cat)}</h2></div><div class="${active==='All'?'row-scroll':'grid-cards'}">${items.map(wcard).join("")}</div>`;
-        }).join("");
+      const ACTIVE = ["Tai Chi", "Tai Chi Chair"];
+      const activeCats = DATA.categories.filter(c => ACTIVE.includes(c));
+      const comingCats = DATA.categories.filter(c => !ACTIVE.includes(c));
+      let active = sessionStorage.getItem("exfilter") || "All";
+      if (active !== "All" && !activeCats.includes(active)) active = "All";
+      const chips = ["All", ...activeCats];
+      const sections = (active === "All" ? activeCats : [active]).map(cat => {
+        const items = DATA.workouts.filter(w => w.cat === cat); if (!items.length) return "";
+        return `<div class="section-title"><h2>${esc(cat)}</h2></div><div class="${active==='All'?'row-scroll':'grid-cards'}">${items.map(wcard).join("")}</div>`;
+      }).join("");
+      const coming = comingCats.length ? `<div class="section-title"><h2>Coming soon</h2></div>
+        <div class="coming-row">${comingCats.map(c => `<div class="coming-chip"><span>${esc(c)}</span><span class="cc-tag">Soon</span></div>`).join("")}</div>` : "";
+      body = `<div class="filters">${chips.map(c => `<button data-c="${c}" class="${c===active?'on':''}">${c}</button>`).join("")}</div>${sections}${coming}`;
     } else {
       const total = DATA.plan.length, done = DATA.plan.filter(p => DB.dayGet("plan")[p.id]).length;
       body = `<div class="plan-prog"><span>Today's progress</span><span>${done}/${total}</span></div>
