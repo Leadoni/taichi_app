@@ -807,6 +807,9 @@
   function vProfile() {
     const p = PROFILE || {};
     const units = p.measurement_system || "metric";
+    const impU = units === "imperial";
+    let hFt = "", hIn = "";
+    if (impU && p.height_cm) { const ti = Math.round(p.height_cm / 2.54); hFt = Math.floor(ti / 12); hIn = ti % 12; }
     view.innerHTML = `
       <h1 class="page">Profile</h1>
       <div class="prof-id"><span class="prof-av">${esc((p.name||p.email||"Y")[0]).toUpperCase()}</span>
@@ -816,7 +819,11 @@
         <div class="sec-label">YOUR INFO</div>
         <label class="fl">Name</label><input id="pf-name" class="tin" value="${esc(p.name||"")}">
         <label class="fl">Email address</label><input class="tin" value="${esc(p.email||"")}" disabled>
-        <label class="fl">Height (cm)</label><input id="pf-height" class="tin" type="number" inputmode="decimal" value="${p.height_cm||""}" placeholder="e.g. 165">
+        ${impU
+          ? `<label class="fl">Height</label><div style="display:flex;gap:10px">
+               <input id="pf-height-ft" class="tin" type="number" inputmode="numeric" value="${hFt}" placeholder="ft" style="flex:1">
+               <input id="pf-height-in" class="tin" type="number" inputmode="numeric" value="${hIn}" placeholder="in" style="flex:1"></div>`
+          : `<label class="fl">Height (cm)</label><input id="pf-height" class="tin" type="number" inputmode="decimal" value="${p.height_cm||""}" placeholder="e.g. 165">`}
         <label class="fl">Daily steps goal</label><input id="pf-steps" class="tin" type="number" value="${p.daily_steps_goal||7000}" placeholder="7000">
         <div style="text-align:right;margin-top:14px"><button class="btn" id="pf-save">Save changes</button></div>
         <div id="pf-msg" class="page-sub" style="text-align:right;margin-top:8px"></div>
@@ -843,8 +850,16 @@
     view.querySelector("#pf-save").onclick = async () => {
       const name = view.querySelector("#pf-name").value.trim();
       const steps = parseInt(view.querySelector("#pf-steps").value) || 7000;
-      const heightRaw = parseFloat(view.querySelector("#pf-height").value);
-      const height_cm = heightRaw > 0 ? heightRaw : null;
+      let height_cm = null;
+      if (impU) {
+        const ft = parseFloat(view.querySelector("#pf-height-ft").value) || 0;
+        const inch = parseFloat(view.querySelector("#pf-height-in").value) || 0;
+        const totIn = ft * 12 + inch;
+        height_cm = totIn > 0 ? Math.round(totIn * 2.54 * 10) / 10 : null;
+      } else {
+        const heightRaw = parseFloat(view.querySelector("#pf-height").value);
+        height_cm = heightRaw > 0 ? heightRaw : null;
+      }
       await DB.updateProfile({ name, daily_steps_goal: steps, height_cm });
       PROFILE.name = name; PROFILE.daily_steps_goal = steps; PROFILE.height_cm = height_cm;
       const m = view.querySelector("#pf-msg"); m.style.color = "var(--primary-dark)"; m.textContent = "✓ Saved";
@@ -853,6 +868,7 @@
     view.querySelectorAll(".seg button").forEach(b => b.onclick = async () => {
       const u = b.dataset.u; view.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x === b));
       await DB.updateProfile({ measurement_system: u }); PROFILE.measurement_system = u;
+      vProfile();
     });
     view.querySelector("#pf-logout").onclick = () => AUTH.signOut();
   }
