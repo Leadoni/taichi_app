@@ -630,6 +630,7 @@
     const trend = (isWeight && hist.length > 1) ? `<div class="sec-label" style="margin:18px 0 8px">TREND</div><div class="card">${trendSvg(hist, PROFILE?.target_weight_kg)}</div>` : "";
     view.innerHTML = `<button class="backlink" onclick="location.hash='#/tracking'">‹ Tracking</button>
       <h1 class="page">${t.icon} ${t.label}</h1>
+      ${t.desc ? `<p class="page-sub">${esc(t.desc)}</p>` : ""}
       <div class="card">${input}${tgtField}<button class="btn block" id="save" style="margin-top:14px">Save entry</button></div>
       ${trend}
       <div class="sec-label" style="margin:18px 0 8px">HISTORY</div>

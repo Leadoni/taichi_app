@@ -398,3 +398,7 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .fh-date{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .fh-goal{font-size:11px;font-weight:800;letter-spacing:.5px;color:#3f7a52;margin-right:6px}
 .fh-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px}
+
+/* weight trend chart labels — space the three readouts evenly */
+.chartlabels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+.chartlabels span:nth-child(2){color:var(--primary);font-weight:700}

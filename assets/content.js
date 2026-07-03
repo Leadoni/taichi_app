@@ -78,7 +78,7 @@ window.CONTENT = {
     { id: "weight", label: "Weight", unit: "kg", icon: "⚖️", numeric: true },
     { id: "water",  label: "Water intake", unit: "glasses", icon: "💧", numeric: true },
     { id: "steps",  label: "Steps", unit: "steps", icon: "👣", numeric: true },
-    { id: "balance",label: "Balance check-in", unit: "/10", icon: "🤸", numeric: true },
+    { id: "balance",label: "Balance check-in", unit: "/10", icon: "🤸", numeric: true, desc: "How steady you feel on your feet today, from 1 (very wobbly) to 10 (rock steady). Try it after a balance exercise like standing on one leg — a simple way to watch your stability improve over time." },
     { id: "mood",   label: "Mood & stress", unit: "", icon: "🧘", numeric: false, special: "self" },
     { id: "fasting",label: "Fasting", unit: "", icon: "⏱️", special: "fasting" },
   ],
