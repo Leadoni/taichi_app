@@ -8,6 +8,7 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const lv = (l) => l === "Advanced" ? "adv" : l === "Intermediate" ? "int" : "beg";
   const img = (seed, w, h) => /^https?:/.test(seed) ? `${seed}?w=${w}&h=${h}&fit=crop&crop=entropy&q=70&auto=format` : `https://picsum.photos/seed/${encodeURIComponent("ctc-" + seed)}/${w}/${h}`;
+  const rimg = (r, w, h) => img((r && (r.image_url || r.image_seed)) || "", w, h);
 
   let DATA = null, ST = null, PROFILE = null;
 
@@ -81,7 +82,7 @@
       const r = recipeById(next.recipe_id); if (!r) return "";
       return `<div class="card home-meal">
         <div class="hm-head"><span class="hm-k">TODAY'S NEXT MEAL</span><a href="#/meals" class="hm-more">›</a></div>
-        <a class="hm-body" href="#/recipe/${r.id}"><img src="${img(r.image_seed,400,260)}" alt="">
+        <a class="hm-body" href="#/recipe/${r.id}"><img src="${rimg(r,400,260)}" alt="">
           <div class="hm-info"><span class="badge beg">${esc(r.meal_type)}</span><div class="hm-title">${esc(r.title)}</div><div class="hm-kcal">${r.kcal} kcal</div></div></a>
         <div class="hm-actions"><button class="btn small" data-mact="done" data-slot="${next.meal_type}">✓ Mark complete</button><button class="btn ghost small" data-mact="skip" data-slot="${next.meal_type}">▷ Skip</button></div></div>`;
     } catch (e) { return ""; }
@@ -522,7 +523,7 @@
       view.innerHTML = `<h1 class="page">Meal plan</h1>${tabs}<div class="meal-tools"><input id="mealSearch" class="meal-search" type="search" placeholder="Search recipes or ingredients&hellip;" value="${esc(_mealQ)}"><div class="chips" id="mealCats">${["all","breakfast","lunch","dinner","snack"].map(c=>`<button data-c="${c}" class="chip ${_mealCat===c?'on':''}">${c==='all'?'All':CAP(c)}</button>`).join("")}</div></div><div id="mealResults"></div>`;
       view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/meals/" + b.dataset.t);
       const results = view.querySelector("#mealResults");
-      const cardHtml = r => `<div class="wcard meal" data-id="${r.id}"><div class="thumb"><img src="${img(r.image_seed,400,260)}" alt=""><span class="b badge beg">${esc(r.meal_type)}</span></div><div class="body"><div class="t">${esc(r.title)}</div><div class="m">${r.minutes} min &middot; ${r.kcal} kcal</div></div></div>`;
+      const cardHtml = r => `<div class="wcard meal" data-id="${r.id}"><div class="thumb"><img src="${rimg(r,400,260)}" alt=""><span class="b badge beg">${esc(r.meal_type)}</span></div><div class="body"><div class="t">${esc(r.title)}</div><div class="m">${r.minutes} min &middot; ${r.kcal} kcal</div></div></div>`;
       const doRender = () => {
         const q = _mealQ.trim().toLowerCase();
         const list = _recipes.filter(r => {
@@ -577,7 +578,7 @@
           : it.status === "skipped"
           ? `<div class="mc-state skip" data-slot="${slot}" data-act="reset">&#9655; Skipped</div>`
           : `<div class="mc-actions"><button data-slot="${slot}" data-act="done">&#10003; Done</button><button data-slot="${slot}" data-act="change">&#8635; Change</button><button data-slot="${slot}" data-act="skip">&#9655; Skip</button></div>`;
-        return `<div class="meal-card" data-id="${r.id}" data-slot="${slot}"><div class="mc-top"><img src="${img(r.image_seed,240,180)}" alt="">
+        return `<div class="meal-card" data-id="${r.id}" data-slot="${slot}"><div class="mc-top"><img src="${rimg(r,240,180)}" alt="">
           <div class="mc-body"><span class="badge beg">${CAP(slot)}</span><div class="n">${esc(r.title)}</div>${r.description?`<div class="mc-desc">${esc(r.description)}</div>`:""}<div class="s">${r.minutes} min &middot; ${r.kcal} kcal${it.kcal_target?` &middot; target ~${it.kcal_target}`:""}</div></div></div>${footer}</div>`;
       }).join("");
       const selDate = new Date(_selDay + "T00:00:00");
@@ -671,11 +672,11 @@
     const fav = !!ST.favorites[id];
     const ing = (r.ingredients || []).map(i => `<li>${esc(i)}</li>`).join("");
     const ins = (r.instructions || []).map((s, i) => `<div class="lrow"><span class="lnum">${i+1}</span><span class="ltext"><span class="lt" style="font-weight:600">${esc(s)}</span></span></div>`).join("");
-    const similar = recipes.filter(x => x.id !== id && x.meal_type === r.meal_type).slice(0, 6).map(x => `<div class="wcard meal" data-id="${x.id}" style="min-width:200px"><div class="thumb"><img src="${img(x.image_seed,400,260)}"><span class="b badge beg">${x.kcal} kcal</span></div><div class="body"><div class="t" style="font-size:15px">${esc(x.title)}</div></div></div>`).join("");
+    const similar = recipes.filter(x => x.id !== id && x.meal_type === r.meal_type).slice(0, 6).map(x => `<div class="wcard meal" data-id="${x.id}" style="min-width:200px"><div class="thumb"><img src="${rimg(x,400,260)}"><span class="b badge beg">${x.kcal} kcal</span></div><div class="body"><div class="t" style="font-size:15px">${esc(x.title)}</div></div></div>`).join("");
     const planItem = planItemForRecipe(id, r.meal_type);
     view.innerHTML = `<button class="backlink" onclick="location.hash='#/meals'">‹ Meals</button>
       <div class="recipe-hero">
-        <div class="rh-img"><img src="${img(r.image_seed,700,700)}" alt=""></div>
+        <div class="rh-img"><img src="${rimg(r,700,700)}" alt=""></div>
         <div class="rh-info">
           <div class="rh-top"><span class="badge beg">${esc(r.meal_type)}</span>
             <button class="favico" id="favBtn" title="Save">${fav?"♥":"♡"}</button></div>
@@ -891,7 +892,7 @@
     const media = Object.values(DATA.stress).flat().filter(x => ids.includes(x.id));
     const meals = recipes.filter(x => ids.includes(x.id));
     const mediaCard = x => `<div class="wcard" data-media="${x.id}"><div class="thumb"><img src="${img(x.seed,400,260)}"><button class="fav" data-id="${x.id}" data-type="media">♥</button></div><div class="body"><div class="t">${esc(x.title)}</div><div class="m">${x.min} min</div></div></div>`;
-    const mealCard = x => `<div class="wcard meal" data-recipe="${x.id}"><div class="thumb"><img src="${img(x.image_seed,400,260)}"><button class="fav" data-id="${x.id}" data-type="recipe">♥</button></div><div class="body"><div class="t">${esc(x.title)}</div><div class="m">${x.minutes} min · ${x.kcal} kcal</div></div></div>`;
+    const mealCard = x => `<div class="wcard meal" data-recipe="${x.id}"><div class="thumb"><img src="${rimg(x,400,260)}"><button class="fav" data-id="${x.id}" data-type="recipe">♥</button></div><div class="body"><div class="t">${esc(x.title)}</div><div class="m">${x.minutes} min · ${x.kcal} kcal</div></div></div>`;
     const section = (title, html) => html ? `<div class="section-title"><h2>${title}</h2></div><div class="grid-cards">${html}</div>` : "";
     view.innerHTML = `<h1 class="page">Favorites</h1>`
       + section("Workouts", workouts.map(wcard).join(""))
