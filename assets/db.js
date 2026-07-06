@@ -144,9 +144,15 @@ window.DB = (function () {
       await SB.from("meal_plan_items").update({ recipe_id: recipeId, status: "pending" }).eq("plan_date", dateISO).eq("meal_type", mealType);
     },
     async setAutoRenew(on) {
-      const u = (await SB.auth.getUser()).data.user;
-      await SB.from("users").update({ cancel_at_period_end: !on }).eq("id", u.id);
-      await SB.from("subscriptions").update({ cancel_at_period_end: !on }).eq("user_id", u.id);
+      // Billing columns are service-role-only (Plan 1 guard + subscriptions RLS); route through
+      // the set-auto-renew edge fn, which updates Stripe -> webhook syncs users/subscriptions.
+      const { data: { session } } = await SB.auth.getSession();
+      const r = await fetch(SUPA.url + "/functions/v1/set-auto-renew", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.access_token, "apikey": SUPA.key },
+        body: JSON.stringify({ on }),
+      });
+      return r.ok;
     },
     // per-day UI state (tasks + plan checklist)
     dayGet(k) { try { return JSON.parse(localStorage.getItem(dayKey(k))) || {}; } catch { return {}; } },
