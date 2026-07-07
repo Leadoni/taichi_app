@@ -162,13 +162,52 @@
       <p class="modal-sub">Get instant access to all of these downloadable guides:</p>
       <ul class="modal-inc">${inc}</ul>
       <div class="modal-price">One-time <b>${esc(b.price)}</b> \u00B7 yours to keep</div>
-      <button class="btn block modal-cta">Unlock now</button>
+      <div class="modal-msg" style="display:none"></div><div class="modal-pay" style="display:none;margin:8px 0 12px"></div><button class="btn block modal-cta">Unlock now</button>
       <p class="modal-fine">Securely charged to your card on file. Instant access.</p></div>`;
     document.body.appendChild(ov);
     const close = () => ov.remove();
     ov.querySelector(".modal-x").onclick = close;
     ov.onclick = (e) => { if (e.target === ov) close(); };
-    ov.querySelector(".modal-cta").onclick = () => { window.open(b.upsell, "_blank"); };
+    const msg = ov.querySelector(".modal-msg"), payBox = ov.querySelector(".modal-pay"), cta = ov.querySelector(".modal-cta");
+    const say = (t, err) => { msg.style.display = "block"; msg.textContent = t; msg.style.color = err ? "#c0392b" : "var(--muted)"; };
+    const unlocked = () => { ST.owned = ST.owned || {}; ST.owned[bundleId] = true; close(); try { vHome(); } catch (e) {} };
+    cta.onclick = async () => {
+      cta.disabled = true; cta.textContent = "Processing\u2026"; say("");
+      try {
+        const res = await callBuyGuides(bundleId);
+        if (res.status === "accepted" || res.status === "already_owned") return unlocked();
+        if (res.status === "requires_action" && res.clientSecret) return payPopup(res.clientSecret, res.pk, b.price, payBox, cta, say, unlocked);
+        say("Sorry, we couldn't complete that. Please try again.", true); cta.disabled = false; cta.textContent = "Try again";
+      } catch (e) { say("Something went wrong. Please try again.", true); cta.disabled = false; cta.textContent = "Try again"; }
+    };
+  }
+  async function callBuyGuides(bundle) {
+    const { data } = await SB.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    const r = await fetch(window.SUPA.url + "/functions/v1/buy-guides", {
+      method: "POST", headers: { "Authorization": "Bearer " + token, "apikey": window.SUPA.key, "Content-Type": "application/json" },
+      body: JSON.stringify({ bundle }),
+    });
+    return r.json();
+  }
+  function loadStripeJs() {
+    return new Promise((resolve) => {
+      if (window.Stripe) return resolve(window.Stripe);
+      const el = document.createElement("script"); el.src = "https://js.stripe.com/v3"; el.onload = () => resolve(window.Stripe); document.head.appendChild(el);
+    });
+  }
+  async function payPopup(clientSecret, pk, price, payBox, cta, say, unlocked) {
+    say("Enter your card to finish \u2014 one-time " + price + ".");
+    const S = await loadStripeJs(); const stripe = S(pk);
+    const elements = stripe.elements({ clientSecret });
+    const pe = elements.create("payment"); payBox.style.display = "block"; pe.mount(payBox);
+    cta.disabled = false; cta.textContent = "Pay " + price;
+    cta.onclick = async () => {
+      cta.disabled = true; cta.textContent = "Paying\u2026";
+      const { error } = await stripe.confirmPayment({ elements, redirect: "if_required" });
+      if (error) { say(error.message || "Payment failed.", true); cta.disabled = false; cta.textContent = "Pay " + price; return; }
+      unlocked();
+    };
   }
 
   async function vHome() {
