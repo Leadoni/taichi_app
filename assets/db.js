@@ -11,11 +11,12 @@ window.DB = (function () {
       // Fall back to the member's quiz answers for anything not set on their profile yet.
       try {
         const { data: q } = await SB.from("quiz_sessions")
-          .select("weight_kg,height_cm,goal_weight_kg,gender,age_band")
+          .select("name,weight_kg,height_cm,goal_weight_kg,gender,age_band")
           .order("created_at", { ascending: false }).limit(1).maybeSingle();
         if (q) {
           if (data.height_cm == null) data.height_cm = q.height_cm;
           if (data.target_weight_kg == null) data.target_weight_kg = q.goal_weight_kg;
+          if (!data.name) data.name = q.name;
           if (!data.gender) data.gender = q.gender;
           if (!data.age_band) data.age_band = q.age_band;
           data.quiz_weight_kg = q.weight_kg;   // used as current-weight fallback until they log one
