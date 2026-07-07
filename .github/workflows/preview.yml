@@ -11,7 +11,7 @@ jobs:
       - name: Stage site
         run: |
           mkdir -p _site
-          rsync -a --exclude='.git' --exclude='.github' --exclude='docs' --exclude='supabase' \
+          rsync -a --exclude='.git' --exclude='.github' --exclude='docs' --exclude='supabase' --exclude='assets/videos' \
             --exclude='node_modules' --exclude='.wrangler' --exclude='_site' ./ _site/
       - name: Deploy to Cloudflare Pages (preview branch=devBob)
         uses: cloudflare/wrangler-action@v3
