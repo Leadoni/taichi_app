@@ -1121,7 +1121,7 @@
     view.querySelector("#pf-logout").onclick = () => AUTH.signOut();
   }
 
-  function vManageSub() {
+  async function vManageSub() {
     const p = PROFILE || {};
     const planName = ({ "1w": "1-week plan", "4w": "4-week plan", "12w": "12-week plan" }[p.subscription_plan] || "Your plan");
     const renew = p.current_period_end ? new Date(p.current_period_end).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—";
@@ -1140,10 +1140,38 @@
             : `<b>Need a breather?</b><p class="page-sub" style="margin:6px 0 0">You can turn off auto-renewal anytime. You'll keep access until the end of your billing period.</p>
                <button class="btn block" id="renew-off" style="margin-top:12px">Turn off auto-renewal</button>`}
         </div>
-      </div>`;
+      </div>
+      <div class="card" id="billCard" style="max-width:520px;margin-top:14px"><div class="sec-label">PAYMENT HISTORY</div><p class="page-sub" style="margin:6px 0 0">Loading\u2026</p></div>`;
     const onBtn = view.querySelector("#renew-on"), offBtn = view.querySelector("#renew-off");
     if (offBtn) offBtn.onclick = async () => { if (!confirm("Turn off auto-renewal? You'll keep access until "+renew+".")) return; await DB.setAutoRenew(false); PROFILE.cancel_at_period_end = true; vManageSub(); };
     if (onBtn) onBtn.onclick = async () => { await DB.setAutoRenew(true); PROFILE.cancel_at_period_end = false; vManageSub(); };
+    const _n = _nav; try { const pays = await DB.payments(); if (_n === _nav) renderBills(pays); } catch (e) {}
+  }
+  function payDesc(kind) {
+    if (kind === "initial") return "Subscription \u2014 introductory";
+    if (kind === "renewal") return "Subscription renewal";
+    if (kind && kind.indexOf("upsell:") === 0) {
+      const id = kind.slice(7);
+      return ({ essential_guides: "Essential Guides bundle", essential_guides_onetime: "Essential Guides bundle", all_guides: "Wellbeing Guides bundle", guide_sleep: "Better Sleep guide", guide_eating: "Eating Without Guilt guide", guide_aging: "Aging Gracefully guide", vip: "VIP membership" }[id]) || ("Add-on: " + id.replace(/_/g, " "));
+    }
+    return kind || "Charge";
+  }
+  function receiptUrl(raw) {
+    if (!raw) return null;
+    return raw.hosted_invoice_url || raw.invoice_pdf || (raw.charges && raw.charges.data && raw.charges.data[0] && raw.charges.data[0].receipt_url) || null;
+  }
+  function renderBills(pays) {
+    const box = document.getElementById("billCard"); if (!box) return;
+    if (!pays.length) { box.innerHTML = '<div class="sec-label">PAYMENT HISTORY</div><p class="page-sub" style="margin:6px 0 0">No charges yet.</p>'; return; }
+    const rows = pays.map(p => {
+      const d = new Date(p.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+      const amt = "$" + Number(p.amount || 0).toFixed(2);
+      const paid = p.status === "succeeded";
+      const rc = receiptUrl(p.raw);
+      return `<div class="bill-row"><div class="bl"><b>${esc(payDesc(p.kind))}</b><small>${d}${rc ? ` \u00B7 <a href="${rc}" target="_blank" rel="noopener">Receipt \u2197</a>` : ""}</small></div>`
+        + `<div class="br"><b>${amt}</b><span class="bstat ${paid ? "ok" : ""}">${paid ? "Paid" : esc(p.status || "")}</span></div></div>`;
+    }).join("");
+    box.innerHTML = '<div class="sec-label">PAYMENT HISTORY</div>' + rows;
   }
 
   function vInstall() {

@@ -513,3 +513,13 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .modal-fine{font-size:11.5px;color:var(--muted);text-align:center;margin:0}
 .modal-msg{font-size:13px;line-height:1.4;margin:0 0 8px}
 .modal-pay{}
+.bill-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.bill-row + .bill-row{}
+.bill-row .bl{display:flex;flex-direction:column;min-width:0}
+.bill-row .bl b{font-size:14.5px}
+.bill-row .bl small{font-size:12.5px;color:var(--muted);margin-top:2px}
+.bill-row .bl small a{color:var(--primary);text-decoration:underline}
+.bill-row .br{display:flex;flex-direction:column;align-items:flex-end;flex:none}
+.bill-row .br b{font-size:14.5px;font-variant-numeric:tabular-nums}
+.bstat{font-size:11px;font-weight:700;color:var(--muted)}
+.bstat.ok{color:var(--primary)}

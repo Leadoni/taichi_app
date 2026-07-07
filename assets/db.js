@@ -76,8 +76,12 @@ window.DB = (function () {
     return state;
   }
 
+  async function payments() {
+    const { data } = await SB.from("payments").select("id,kind,amount,currency,status,created_at,raw").order("created_at", { ascending: false });
+    return data || [];
+  }
   return {
-    profile, hasAccess, loadContent, loadUserState,
+    profile, hasAccess, loadContent, loadUserState, payments,
     // mutations
     async toggleSession(id, on) {
       if (on) { const u = (await SB.auth.getUser()).data.user; await SB.from("user_session_progress").insert({ user_id: u.id, session_id: id, status: "completed" }); }
