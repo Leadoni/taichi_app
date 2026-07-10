@@ -140,13 +140,13 @@
 
   // ---- Premium guides (upsell content) ----
   const GUIDES = [
-    { id:"joint-mobility", title:"Joint & Mobility", sub:"Gentle seated joint-care routine", file:"assets/guide-joint-mobility.pdf?v=1", group:"essentials", offer:"guide_joint-mobility", unlock:["essential_guides","essential_guides_onetime","guide_joint-mobility"], ready:true },
-    { id:"breathing", title:"Stress-Relief Breathing", sub:"Seated breathing to calm body & mind", file:"assets/guide-breathing.pdf?v=2", group:"essentials", offer:"guide_breathing", unlock:["essential_guides","essential_guides_onetime","guide_breathing"], ready:true },
-    { id:"nutrition", title:"Weekly Gentle Nutrition", sub:"7 gentle habits for eating well", file:"assets/guide-nutrition.pdf?v=1", group:"essentials", offer:"guide_nutrition", unlock:["essential_guides","essential_guides_onetime","guide_nutrition"], ready:true },
-    { id:"desserts", title:"Sweet & Gentle: 25 Lighter Desserts", sub:"25 lighter treats you'll love", file:"assets/guide-desserts.pdf?v=1", group:"essentials", offer:"guide_desserts", unlock:["essential_guides","essential_guides_onetime","guide_desserts"], ready:true },
-    { id:"sleep", title:"Better Sleep", sub:"A Chair Tai Chi wind-down for restful nights", file:"assets/guide-sleep.pdf?v=1", group:"wellbeing", offer:"guide_sleep", unlock:["all_guides","guide_sleep"], ready:true },
-    { id:"eating", title:"Eating Without Guilt", sub:"A calm, kind relationship with food", file:"assets/guide-eating.pdf?v=1", group:"wellbeing", offer:"guide_eating", unlock:["all_guides","guide_eating"], ready:true },
-    { id:"aging", title:"Aging Gracefully", sub:"7 pillars for a strong, calm, joyful later life", file:"assets/guide-aging.pdf?v=1", group:"wellbeing", offer:"guide_aging", unlock:["all_guides","guide_aging"], ready:true },
+    { id:"joint-mobility", cover:"https://pixtozeghxwiidpnloih.supabase.co/storage/v1/object/public/recipe-images/guides/joint-mobility.jpg", title:"Joint & Mobility", sub:"Gentle seated joint-care routine", file:"assets/guide-joint-mobility.pdf?v=1", group:"essentials", offer:"guide_joint-mobility", unlock:["essential_guides","essential_guides_onetime","guide_joint-mobility"], ready:true },
+    { id:"breathing", cover:"https://pixtozeghxwiidpnloih.supabase.co/storage/v1/object/public/recipe-images/guides/breathing.jpg", title:"Stress-Relief Breathing", sub:"Seated breathing to calm body & mind", file:"assets/guide-breathing.pdf?v=2", group:"essentials", offer:"guide_breathing", unlock:["essential_guides","essential_guides_onetime","guide_breathing"], ready:true },
+    { id:"nutrition", cover:"https://pixtozeghxwiidpnloih.supabase.co/storage/v1/object/public/recipe-images/guides/nutrition.jpg", title:"Weekly Gentle Nutrition", sub:"7 gentle habits for eating well", file:"assets/guide-nutrition.pdf?v=1", group:"essentials", offer:"guide_nutrition", unlock:["essential_guides","essential_guides_onetime","guide_nutrition"], ready:true },
+    { id:"desserts", cover:"https://pixtozeghxwiidpnloih.supabase.co/storage/v1/object/public/recipe-images/guides/desserts.jpg", title:"Sweet & Gentle: 25 Lighter Desserts", sub:"25 lighter treats you'll love", file:"assets/guide-desserts.pdf?v=1", group:"essentials", offer:"guide_desserts", unlock:["essential_guides","essential_guides_onetime","guide_desserts"], ready:true },
+    { id:"sleep", cover:"https://pixtozeghxwiidpnloih.supabase.co/storage/v1/object/public/recipe-images/guides/sleep.jpg", title:"Better Sleep", sub:"A Chair Tai Chi wind-down for restful nights", file:"assets/guide-sleep.pdf?v=1", group:"wellbeing", offer:"guide_sleep", unlock:["all_guides","guide_sleep"], ready:true },
+    { id:"eating", cover:"https://pixtozeghxwiidpnloih.supabase.co/storage/v1/object/public/recipe-images/guides/eating.jpg", title:"Eating Without Guilt", sub:"A calm, kind relationship with food", file:"assets/guide-eating.pdf?v=1", group:"wellbeing", offer:"guide_eating", unlock:["all_guides","guide_eating"], ready:true },
+    { id:"aging", cover:"https://pixtozeghxwiidpnloih.supabase.co/storage/v1/object/public/recipe-images/guides/aging.jpg", title:"Aging Gracefully", sub:"7 pillars for a strong, calm, joyful later life", file:"assets/guide-aging.pdf?v=1", group:"wellbeing", offer:"guide_aging", unlock:["all_guides","guide_aging"], ready:true },
   ];
   const GROUPS = [
     { id:"essentials", bundle:"essential_guides", title:"Premium Essentials Guides", sub:"Movement, breathing & everyday nutrition", bundlePrice:"$38.99", allLabel:"all four guides" },
@@ -157,9 +157,10 @@
   function renderGuides() {
     const card = g => {
       const owned = guideOwned(g);
-      if (owned && g.ready) return `<a class="gcard owned" href="${g.file}" download="${esc(g.title)}.pdf"><span class="gc-ic">\uD83D\uDCD7</span><span class="gc-tx"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="gc-dl">\u2B07</span></a>`;
-      if (owned && !g.ready) return `<div class="gcard soon"><span class="gc-ic">\uD83D\uDCD7</span><span class="gc-tx"><b>${esc(g.title)}</b><small>Owned \u00B7 coming soon</small></span></div>`;
-      return `<div class="gcard locked" data-guide="${g.id}"><span class="gc-ic">\uD83D\uDD12</span><span class="gc-tx"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="gc-lock">Unlock</span></div>`;
+      const cov = g.cover ? `<div class="gc-cov"><img src="${g.cover}" alt=""></div>` : "";
+      if (owned && g.ready) return `<a class="gcard owned" href="${g.file}" download="${esc(g.title)}.pdf">${cov}<div class="gc-row"><span class="gc-ic">\uD83D\uDCD7</span><span class="gc-tx"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="gc-dl">\u2B07</span></div></a>`;
+      if (owned && !g.ready) return `<div class="gcard soon">${cov}<div class="gc-row"><span class="gc-ic">\uD83D\uDCD7</span><span class="gc-tx"><b>${esc(g.title)}</b><small>Owned \u00B7 coming soon</small></span></div></div>`;
+      return `<div class="gcard locked" data-guide="${g.id}">${cov}<div class="gc-row"><span class="gc-ic">\uD83D\uDD12</span><span class="gc-tx"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="gc-lock">Unlock</span></div></div>`;
     };
     const sections = GROUPS.map(gr => {
       const cards = GUIDES.filter(g => g.group === gr.id).map(card).join("");
@@ -282,10 +283,12 @@
           <button class="hero-start">▶ Start today's session</button></div></div>
 
       <div class="hsec">Today</div>
-      <div class="htiles">
-        <a class="htile" href="#/exercises"><span class="ht-ic">🧘</span><b>Move</b><small>${ST.completed[hero.id] ? "Done ✓" : "Not yet"}</small></a>
-        <a class="htile" href="#/meals"><span class="ht-ic">🍽️</span><b>Meals</b><small>${mealsTotal ? mealsDone + " of " + mealsTotal : "Plan"}</small></a>
-        <a class="htile" href="#/track/mood"><span class="ht-ic">🙂</span><b>Check-in</b><small>${mi >= 0 ? "Logged" : "Log mood"}</small></a>
+      <div class="hnums">
+        <a class="hnum" href="#/track/weight"><div><div class="hn-k">Weight</div><div class="hn-v">${wValH} <small>${wUnitH}</small></div></div><span class="hn-go">Log</span></a>
+        <a class="hnum" href="#/track/water"><div><div class="hn-k">Water</div><div class="hn-v">${ST.latest.water??0} <small>glasses</small></div></div><span class="hn-go">Log</span></a>
+        <a class="hnum" href="#/track/balance"><div><div class="hn-k">Balance</div><div class="hn-v">${ST.latest.balance??"—"} <small>/10</small></div></div><span class="hn-go">Log</span></a>
+        <a class="hnum" href="#/track/mood"><div><div class="hn-k">Mood</div><div class="hn-v" style="font-size:15px;font-weight:600;color:var(--muted)">${mi>=0?(MOOD_EMO[mi]+(si>=0?" "+STRESS_EMO[si]:"")):"Log"}</div></div><span class="hn-go">Log</span></a>
+        <a class="hnum" href="#/track/fasting"><div><div class="hn-k">Fasting</div><div class="hn-v" style="font-size:15px;font-weight:600;color:var(--muted)">${fastSub}</div></div><span class="hn-go">Open</span></a>
       </div>
 
       <div class="hsec">Today's meals</div>
@@ -294,13 +297,6 @@
       <div class="hsec">Academy</div>
       ${acadCard}
 
-      <div class="hsec">Your numbers</div>
-      <div class="hnums">
-        <a class="hnum" href="#/track/weight"><div><div class="hn-k">Weight</div><div class="hn-v">${wValH} <small>${wUnitH}</small></div></div><span class="hn-go">Log</span></a>
-        <a class="hnum" href="#/track/water"><div><div class="hn-k">Water</div><div class="hn-v">${ST.latest.water??0} <small>glasses</small></div></div><span class="hn-go">Log</span></a>
-        <a class="hnum" href="#/track/balance"><div><div class="hn-k">Balance</div><div class="hn-v">${ST.latest.balance??"—"} <small>/10</small></div></div><span class="hn-go">Log</span></a>
-        <a class="hnum" href="#/track/fasting"><div><div class="hn-k">Fasting</div><div class="hn-v" style="font-size:15px;font-weight:600;color:var(--muted)">${fastSub}</div></div><span class="hn-go">Open</span></a>
-      </div>
 
       <a class="pdfcard hbanner" href="assets/tai-chi-walking2.pdf?v=1" download="Tai-Chi-Walking.pdf">
         <span class="pc-ic">🎁</span>
