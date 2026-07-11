@@ -983,7 +983,7 @@
     const inpUnit = isWeight ? wUnit : t.unit;
     const tapMetric = metric === "water" || metric === "balance";
     const input = metric === "water"
-      ? `<div class="tapsel glasses" id="tapsel">${Array.from({length:8},(_,i)=>`<button data-v="${i+1}" aria-label="${i+1} glasses">💧</button>`).join("")}</div>`
+      ? `<div class="tapsel glasses" id="tapsel">${Array.from({length:8},(_,i)=>`<button data-v="${i+1}" aria-label="${i+1} glasses"><span class="g">💧</span><span class="n">${i+1}</span></button>`).join("")}</div>`
       : metric === "balance"
       ? `<div class="tapsel nums" id="tapsel">${Array.from({length:10},(_,i)=>`<button data-v="${i+1}">${i+1}</button>`).join("")}</div>`
       : t.numeric
