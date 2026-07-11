@@ -1370,7 +1370,7 @@
     const l = list.find(x => x.id === id); if (!l) return notFound();
     const prog = await DB.lessonProgress(); const taskDone = !!prog[id]?.task;
     if (_n !== _nav) return;
-    view.innerHTML = `<button class="backlink" onclick="location.hash='#/academy'">‹ Academy</button>
+    view.innerHTML = `<div class="lesson-wrap"><button class="backlink" onclick="location.hash='#/academy'">‹ Academy</button>
       ${l.cover_seed && /^https?:/.test(l.cover_seed) ? `<img class="lesson-cover" src="${l.cover_seed}" alt="">` : ""}
       <div class="lesson-eyebrow">Day ${l.day_number} · ${esc(ACADEMY_SECTIONS[l.week_number-1] || "")}</div>
       <h1 class="page" style="font-size:26px;margin-top:2px">${esc(l.title)}</h1>
@@ -1378,7 +1378,7 @@
       <div class="article">${renderArticle(l.body)}</div>
       <div class="card" style="margin-top:18px"><div class="section-title" style="margin:0 0 8px"><h2>Your task</h2></div>
         <div class="task ${taskDone ? "done" : ""}" id="task"><span class="box">${taskDone ? "✓" : ""}</span><span class="lab">${esc(l.task || "Reflect on today's lesson.")}</span></div>
-        <button class="btn block" id="finish" style="margin-top:14px">${prog[id]?.done ? "✓ Completed" : "Mark lesson complete"}</button></div>`;
+        <button class="btn block" id="finish" style="margin-top:14px">${prog[id]?.done ? "✓ Completed" : "Mark lesson complete"}</button></div></div>`;
     let done = taskDone;
     view.querySelector("#task").onclick = () => { done = !done; const t = view.querySelector("#task"); t.classList.toggle("done", done); t.querySelector(".box").textContent = done ? "✓" : ""; };
     view.querySelector("#finish").onclick = async () => { await DB.completeLesson(id, done); view.querySelector("#finish").textContent = "✓ Completed"; };
