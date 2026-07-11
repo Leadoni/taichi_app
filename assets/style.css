@@ -170,9 +170,9 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .tapsel button{border:2px solid var(--line);background:#fff;border-radius:12px;cursor:pointer;font-size:22px;padding:8px;min-width:48px;height:48px;display:grid;place-items:center;color:var(--ink)}
 .tapsel.nums button{font-size:17px;font-weight:800}
 .tapsel button.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary-dark)}
-.tapsel.glasses button{position:relative}
-.tapsel.glasses .g{filter:grayscale(1);opacity:.45}
-.tapsel.glasses .n{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--ink);pointer-events:none}
+.tapsel.glasses button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:auto;min-height:54px;padding:5px 8px;line-height:1}
+.tapsel.glasses .n{font-size:11px;font-weight:800;color:var(--muted)}
+.tapsel.glasses .g{filter:grayscale(1);opacity:.45;font-size:20px}
 .tapsel.glasses button.on .g{filter:none;opacity:1}
 .tapsel.glasses button.on{background:var(--primary-soft);border-color:var(--primary)}
 .tapsel.glasses button.on .n{color:var(--primary-dark)}
@@ -532,7 +532,7 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
   .wacc-desc{text-align:left}
 }
 .wcard.walk .thumb{background:linear-gradient(135deg,var(--band-b),var(--band-a))}
-.wcard.walk .thumb img{object-fit:contain;width:100%;height:100%}
+.wcard.walk .thumb img{object-fit:cover;object-position:top center;width:100%;height:100%}
 
 /* ---- "Coming up" interstitial (video sessions) ---- */
 .interim{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:linear-gradient(180deg,var(--interim-a),var(--interim-b))}
