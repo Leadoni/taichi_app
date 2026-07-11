@@ -52,8 +52,11 @@ window.DB = (function () {
       const categories = [...new Set(workouts.map(w => w.cat))];
       const stress = {};
       (media || []).forEach(m => { (stress[m.kind] = stress[m.kind] || []).push({ id: m.id, title: m.title, min: m.duration_min, seed: m.thumb_seed }); });
-      // derive a simple daily plan from the first chair/standing sessions
-      const plan = workouts.slice(0, 6).map(w => ({ id: "plan_" + w.id, title: w.title, level: w.level, min: w.min, seed: w.seed }));
+      // derive a simple daily plan from the first REAL sessions (real thumbnail = has produced
+      // content); skips the "coming soon" placeholder sessions that only have picsum seeds.
+      const _real = w => /^(https?:|assets\/)/.test(w.seed || "");
+      const plan = (workouts.filter(_real).length ? workouts.filter(_real) : workouts).slice(0, 6)
+        .map(w => ({ id: "plan_" + w.id, title: w.title, level: w.level, min: w.min, seed: w.seed }));
       if (!workouts.length) throw new Error("empty");
       return { workouts, categories, stress, plan };
     } catch (e) {
