@@ -6,7 +6,7 @@
   const C = window.CONTENT, view = document.getElementById("view");
   const el = (h) => { const d = document.createElement("div"); d.innerHTML = h; return d; };
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const lv = (l) => l === "Advanced" ? "adv" : l === "Intermediate" ? "int" : "beg";
+  const lv = (l) => l === "Master" ? "mas" : l === "Advanced" ? "adv" : l === "Intermediate" ? "int" : "beg";
   const img = (seed, w, h) => {
     if (/^https?:/.test(seed)) {
       // Supabase Storage objects: serve a resized/compressed (WebP when supported) variant
@@ -337,7 +337,8 @@
       const chips = ["All", ...activeCats];
       const sections = (active === "All" ? activeCats : [active]).map(cat => {
         const items = DATA.workouts.filter(w => w.cat === cat); if (!items.length) return "";
-        return `<div class="section-title"><h2>${esc(cat)}</h2></div><div class="${active==='All'?'row-scroll':'grid-cards'}">${items.map(wcard).join("")}</div>`;
+        const seeAll = active === 'All' && items.length > 2 ? `<a class="see-all" data-see="${esc(cat)}">View all ›</a>` : "";
+        return `<div class="section-title"><h2>${esc(cat)}</h2>${seeAll}</div><div class="${active==='All'?'row-scroll':'grid-cards'}">${items.map(wcard).join("")}</div>`;
       }).join("");
       const coming = comingCats.length ? `<div class="section-title"><h2>Coming soon</h2></div>
         <div class="coming-row">${comingCats.map(c => `<div class="coming-chip"><span>${esc(c)}</span></div>`).join("")}</div>` : "";
@@ -353,6 +354,7 @@
     view.innerHTML = `<h1 class="page">Exercises</h1>${tabs}${body}`;
     view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/exercises/" + b.dataset.t);
     view.querySelectorAll(".filters button").forEach(b => b.onclick = () => { sessionStorage.setItem("exfilter", b.dataset.c); vExercises("workouts"); });
+    view.querySelectorAll(".see-all").forEach(a => a.onclick = () => { sessionStorage.setItem("exfilter", a.dataset.see); vExercises("workouts"); window.scrollTo(0, 0); });
     view.querySelectorAll(".wcard").forEach(c => { if (!c.dataset.locked) c.onclick = (e) => { if (e.target.closest(".fav")) return; location.hash = "#/workout/" + c.dataset.id; }; });
     view.querySelectorAll(".fav").forEach(f => f.onclick = async (e) => { e.stopPropagation(); const on = !ST.favorites[f.dataset.id]; ST.favorites[f.dataset.id] = on || undefined; if (!on) delete ST.favorites[f.dataset.id]; await DB.toggleFav(f.dataset.id, on); vExercises(tab); });
     view.querySelectorAll(".chk").forEach(c => c.onclick = () => { DB.dayToggle("plan", c.dataset.p); vExercises("plan"); });
