@@ -1356,11 +1356,11 @@
       return `<div class="section-title" style="margin:22px 0 10px"><h2>${esc(ACADEMY_SECTIONS[wk-1] || ("Section " + wk))}</h2><span style="color:var(--muted);font-weight:700">${secDone}/${items.length}</span></div>
         <div class="card listcard">${rows}</div>`;
     }).join("");
-    view.innerHTML = `<h1 class="page">Academy</h1><p class="page-sub">A 50-day journey — one gentle lesson a day, across five themes.</p>
+    view.innerHTML = `<div class="academy-wrap"><h1 class="page">Academy</h1><p class="page-sub">A 50-day journey — one gentle lesson a day, across five themes.</p>
       <div class="card"><div class="section-title" style="margin:0 0 8px"><h2>Your progress</h2><span style="color:var(--muted);font-weight:700">${doneCount} of ${lessons.length}</span></div>
         <div class="pbar" style="margin-bottom:0"><i style="width:${pct}%"></i></div></div>
       <div style="margin-top:16px">${chips}</div>
-      ${sectionsHtml}`;
+      ${sectionsHtml}</div>`;
     view.querySelectorAll(".filters button").forEach(b => b.onclick = () => { _acadCat = b.dataset.c; vAcademy(); });
     view.querySelectorAll(".lesson:not(.locked)").forEach(el => el.onclick = () => location.hash = "#/lesson/" + el.dataset.id);
   }
