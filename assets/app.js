@@ -985,7 +985,9 @@
       ? `<div class="logger"><input id="val" type="number" inputmode="decimal" placeholder="Enter ${t.label.toLowerCase()} (${inpUnit})"></div>`
       : `<div class="moodrow">${["😟","😕","😐","🙂","😄"].map((m,i)=>`<button data-mood="${i+1}">${m}</button>`).join("")}</div>`;
     const hist = ST.history[metric] || [];
-    const tgtField = isWeight ? `<label class="fl">Target weight (${wUnit})</label><input id="tgt" class="tin" type="number" inputmode="decimal" value="${PROFILE?.target_weight_kg != null ? toDisp(PROFILE.target_weight_kg) : ""}" placeholder="${imp ? "e.g. 154" : "e.g. 70"}">` : "";
+    const _tgtVal = PROFILE?.target_weight_kg != null ? toDisp(PROFILE.target_weight_kg) : "";
+    const tgtField = isWeight ? `<div class="tgt-row" id="tgtRow"><span class="tgt-lbl">Goal weight: <b>${_tgtVal !== "" ? _tgtVal + " " + wUnit : "—"}</b></span><a class="tgt-edit" id="tgtEdit">Edit</a></div>
+      <input id="tgt" class="tin" type="number" inputmode="decimal" value="${_tgtVal}" placeholder="${imp ? "e.g. 154" : "e.g. 70"}" style="margin-top:10px" hidden>` : "";
     const trend = (isWeight && hist.length > 1) ? `<div class="sec-label" style="margin:18px 0 8px">TREND</div><div class="card">${trendSvg(hist, PROFILE?.target_weight_kg)}</div>` : "";
     view.innerHTML = `<button class="backlink" onclick="location.hash='#/tracking'">‹ Tracking</button>
       <h1 class="page">${t.icon} ${t.label}</h1>
@@ -996,6 +998,8 @@
       <div class="hist">${hist.length?hist.map(h=>`<div class="h"><span>${isWeight ? toDisp(parseFloat(h.value)) + " " + wUnit : esc(String(h.value)) + " " + (t.unit||"")}</span><span style="color:var(--muted)">${new Date(h.at).toLocaleString()}</span></div>`).join(""):'<p class="page-sub">No entries yet.</p>'}</div>`;
     let mood = null;
     view.querySelectorAll(".moodrow button").forEach(b => b.onclick = () => { mood = +b.dataset.mood; view.querySelectorAll(".moodrow button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); });
+    const _te = view.querySelector("#tgtEdit");
+    if (_te) _te.onclick = () => { const i = view.querySelector("#tgt"); i.hidden = false; i.focus(); const r = view.querySelector("#tgtRow"); if (r) r.style.display = "none"; };
     view.querySelector("#save").onclick = async () => {
       let v = t.numeric ? view.querySelector("#val").value : mood;
       if (t.numeric) { if (!(parseFloat(v) >= 0)) { view.querySelector("#val").focus(); return; } }

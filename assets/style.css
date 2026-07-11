@@ -163,6 +163,9 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .track-tile .tt{flex:1}.track-tile .tt .l{font-weight:700}.track-tile .tt .v{font-size:13px;color:var(--muted)}
 .logger input{width:100%;border:2px solid var(--line);border-radius:12px;padding:14px;font-size:18px;outline:none}
 .logger input:focus{border-color:var(--primary)}
+.tgt-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:15px;color:var(--ink-soft)}
+.tgt-row .tgt-lbl b{color:var(--ink);font-weight:700}
+.tgt-row .tgt-edit{color:var(--primary-dark);font-weight:700;font-size:13px;cursor:pointer;text-decoration:underline}
 .moodrow{display:flex;gap:10px;justify-content:space-between;margin:10px 0}
 .moodrow button{flex:1;border:2px solid var(--line);background:#fff;border-radius:12px;padding:12px 0;font-size:24px;cursor:pointer}
 .moodrow button.on{border-color:var(--primary);background:var(--primary-soft)}
