@@ -154,8 +154,11 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .plan-item{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px;margin-bottom:10px}
 .plan-item img{width:64px;height:48px;border-radius:8px;object-fit:cover;flex:none}
 .plan-item .pt{flex:1}.plan-item .pt .n{font-weight:700}.plan-item .pt .s{font-size:13px;color:var(--muted)}
-.plan-item .chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:none;cursor:pointer;color:#fff;flex:none}
-.plan-item .chk.on{background:var(--primary);border-color:var(--primary)}
+.plan-item{cursor:pointer}
+.plan-item .chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:none;display:grid;place-items:center;font-size:13px;color:var(--primary-dark);flex:none}
+.plan-item .chk.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.plan-item.next{border:2px solid var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.plan-item.done .pt .n{color:var(--muted)}
 
 /* tracking */
 .track-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}

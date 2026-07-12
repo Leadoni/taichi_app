@@ -344,12 +344,20 @@
         <div class="coming-row">${comingCats.map(c => `<div class="coming-chip"><span>${esc(c)}</span></div>`).join("")}</div>` : "";
       body = `<div class="filters">${chips.map(c => `<button data-c="${c}" class="${c===active?'on':''}">${c}</button>`).join("")}</div>${sections}${coming}`;
     } else {
-      const total = DATA.plan.length, done = DATA.plan.filter(p => DB.dayGet("plan")[p.id]).length;
-      body = `<div class="plan-prog"><span>Today's progress</span><span>${done}/${total}</span></div>
-        <div class="pbar"><i style="width:${total?Math.round(done/total*100):0}%"></i></div>
-        ${DATA.plan.map(p => `<div class="plan-item"><img src="${img(p.seed,200,150)}" alt="">
-          <div class="pt"><div class="n">${esc(p.title)}</div><div class="s">${p.level} · ${p.min} min</div></div>
-          <button class="chk ${DB.dayGet("plan")[p.id]?'on':''}" data-p="${p.id}">${DB.dayGet("plan")[p.id]?'✓':''}</button></div>`).join("")}`;
+      const days = DATA.workouts.filter(w => w.cat === "Tai Chi Chair");
+      const doneCount = days.filter(d => ST.completed[d.id]).length;
+      const nextDay = days.find(d => !ST.completed[d.id]);
+      body = `<div class="plan-prog"><span>Tai Chi Chair Progress</span><span>${doneCount}/${days.length} days</span></div>
+        <div class="pbar"><i style="width:${days.length?Math.round(doneCount/days.length*100):0}%"></i></div>
+        ${days.map((d, i) => {
+          const dn = !!ST.completed[d.id], isNext = nextDay && d.id === nextDay.id;
+          const src = /^(https?:|assets\/)/.test(d.seed || "") ? d.seed : img(d.seed, 200, 150);
+          const status = dn ? "Completed" : (isNext ? "Up next" : `${esc(d.level)} · ${d.min} min`);
+          return `<div class="plan-item${dn ? " done" : ""}${isNext ? " next" : ""}" data-go="${d.id}">
+            <img src="${src}" alt="">
+            <div class="pt"><div class="n">Day ${i + 1} · ${esc(d.title)}</div><div class="s">${status}</div></div>
+            <span class="chk${dn ? " on" : ""}">${dn ? "✓" : (isNext ? "▶" : "")}</span></div>`;
+        }).join("")}`;
     }
     view.innerHTML = `<h1 class="page">Exercises</h1>${tabs}${body}`;
     view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/exercises/" + b.dataset.t);
@@ -357,7 +365,7 @@
     view.querySelectorAll(".see-all").forEach(a => a.onclick = () => { sessionStorage.setItem("exfilter", a.dataset.see); vExercises("workouts"); window.scrollTo(0, 0); });
     view.querySelectorAll(".wcard").forEach(c => { if (!c.dataset.locked) c.onclick = (e) => { if (e.target.closest(".fav")) return; location.hash = "#/workout/" + c.dataset.id; }; });
     view.querySelectorAll(".fav").forEach(f => f.onclick = async (e) => { e.stopPropagation(); const on = !ST.favorites[f.dataset.id]; ST.favorites[f.dataset.id] = on || undefined; if (!on) delete ST.favorites[f.dataset.id]; await DB.toggleFav(f.dataset.id, on); vExercises(tab); });
-    view.querySelectorAll(".chk").forEach(c => c.onclick = () => { DB.dayToggle("plan", c.dataset.p); vExercises("plan"); });
+    view.querySelectorAll(".plan-item[data-go]").forEach(c => c.onclick = () => location.hash = "#/workout/" + c.dataset.go);
   }
 
   function vWorkout(id) {
