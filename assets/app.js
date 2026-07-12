@@ -851,11 +851,25 @@
         const eb = view.querySelector("#grocEmailBtn"), box = view.querySelector("#grocEmail");
         if (eb) eb.onclick = () => { box.hidden = !box.hidden; if (!box.hidden) view.querySelector("#grocEmailInput").focus(); };
         const es = view.querySelector("#grocEmailSend");
-        if (es) es.onclick = () => {
+        if (es) es.onclick = async () => {
           const inp = view.querySelector("#grocEmailInput"), msg = view.querySelector("#grocEmailMsg");
           const v = inp.value.trim();
           if (!/^\S+@\S+\.\S+$/.test(v)) { msg.textContent = "Please enter a valid email address."; msg.style.color = "var(--accent)"; inp.focus(); return; }
-          emailGroceries(v); msg.textContent = "Opening your email app…"; msg.style.color = "var(--muted)";
+          const items = buildGroceries([..._grocDays].sort()).map(g => { const f = fmtLine(g); return { amt: f.amt, name: f.name }; });
+          if (!items.length) { msg.textContent = "Select at least one day first."; msg.style.color = "var(--accent)"; return; }
+          es.disabled = true; msg.textContent = "Sending…"; msg.style.color = "var(--muted)";
+          try {
+            const { data: { session } } = await SB.auth.getSession();
+            const r = await fetch(SUPA.url + "/functions/v1/send-groceries", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (session ? session.access_token : ""), "apikey": SUPA.key },
+              body: JSON.stringify({ to: v, days: _grocDays.size, items }),
+            });
+            const j = await r.json().catch(() => ({}));
+            if (r.ok && j.ok) { msg.textContent = "✓ Sent! Check " + v; msg.style.color = "var(--primary-dark)"; }
+            else { msg.textContent = "Couldn't send — please try again."; msg.style.color = "var(--accent)"; }
+          } catch (e) { msg.textContent = "Couldn't send — please try again."; msg.style.color = "var(--accent)"; }
+          es.disabled = false;
         };
       }
       if (_planSub === "meals") {
