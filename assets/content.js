@@ -26,6 +26,8 @@ window.CONTENT = {
     { id: "cc6", cat: "Tai Chi Chair", title: "Gentle Flex Flow", level: "Intermediate", min: 10, focus: "Stretching & mobility", seed: "chair-flex-flow" },
     { id: "cc7", cat: "Tai Chi Chair", title: "Daybreak Warmup", level: "Intermediate", min: 10, focus: "Gentle warm-up", seed: "chair-warmup" },
     { id: "cc8", cat: "Tai Chi Chair", title: "Gentle Breeze Relax", level: "Advanced", min: 6, focus: "Relaxation & stretch", seed: "chair-breeze" },
+    { id: "cc9", cat: "Tai Chi Chair", title: "Whispering Willow Flow", level: "Advanced", min: 5, focus: "Mobility & chair-supported", seed: "chair-willow" },
+    { id: "cc10", cat: "Tai Chi Chair", title: "Gentle Chair Lift", level: "Master", min: 5, focus: "Lower body & chair-supported", seed: "chair-lift" },
 
     { id: "yg1", cat: "Yoga", title: "Chair Yoga Unwind", level: "Beginner", min: 6, focus: "Flexibility", seed: "yoga-unwind" },
     { id: "yg2", cat: "Yoga", title: "Morning Gentle Stretch", level: "Beginner", min: 7, focus: "Mobility", seed: "yoga-morning" },
