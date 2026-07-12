@@ -127,7 +127,7 @@ window.DB = (function () {
     async recipes() { const { data } = await SB.from("recipes").select("*").eq("is_published", true).order("sort"); return data || []; },
     // ----- Academy -----
     async academyLessons() { const { data } = await SB.from("lessons").select("*").eq("is_published", true).order("sort"); return data || []; },
-    async lessonProgress() { const { data } = await SB.from("user_lesson_progress").select("lesson_id,task_done"); const m = {}; (data || []).forEach(r => m[r.lesson_id] = { done: true, task: r.task_done }); return m; },
+    async lessonProgress() { const { data } = await SB.from("user_lesson_progress").select("lesson_id,task_done,completed_at"); const m = {}; (data || []).forEach(r => m[r.lesson_id] = { done: true, task: r.task_done, at: r.completed_at }); return m; },
     async completeLesson(id, taskDone) { const u = (await SB.auth.getUser()).data.user; await SB.from("user_lesson_progress").upsert({ user_id: u.id, lesson_id: id, task_done: !!taskDone, completed_at: new Date().toISOString() }, { onConflict: "user_id,lesson_id" }); },
     // ----- Challenges -----
     async challengesList() { const { data } = await SB.from("challenges").select("*").eq("is_published", true).order("sort"); return data || []; },

@@ -114,7 +114,7 @@
       const done = lessons.filter(l => prog[l.id]?.done).length;
       const pct = Math.round(done / lessons.length * 100);
       let cur = null, idx = 0;
-      for (let i = 0; i < lessons.length; i++) { const unlocked = ACADEMY_UNLOCK_ALL || i === 0 || !!prog[lessons[i - 1].id]?.done; if (unlocked && !prog[lessons[i].id]?.done) { cur = lessons[i]; idx = i + 1; break; } }
+      for (let i = 0; i < lessons.length; i++) { const unlocked = i === 0 || acadDailyUnlocked(prog[lessons[i - 1].id]); if (unlocked && !prog[lessons[i].id]?.done) { cur = lessons[i]; idx = i + 1; break; } }
       if (!cur) return `<div class="card home-acad"><div class="hm-head"><span class="hm-k">ACADEMY</span><a href="#/academy" class="hm-more">›</a></div><div class="ha-title">All lessons complete 🎉</div><div class="pbar" style="margin:8px 0 0"><i style="width:100%"></i></div></div>`;
       return `<div class="card home-acad"><div class="hm-head"><span class="hm-k">ACADEMY · LESSON ${idx} OF ${lessons.length}</span><a href="#/academy" class="hm-more">›</a></div>
         <div class="ha-title">${esc(cur.title)}</div>
@@ -1365,7 +1365,16 @@
   let _lessons = null;
   const ACADEMY_SECTIONS = ["Foundations & the Daily Habit", "Steady & Strong: Balance", "Move Freely: Joints & Mobility", "Calm Mind, Clear Focus", "Aging Well: Everyday Habits"];
   const ACADEMY_CHIPS = ["Foundations", "Balance", "Mobility", "Calm & Focus", "Aging Well"];
-  const ACADEMY_UNLOCK_ALL = false;  // 1 lesson/day: next unlocks only after the previous is done
+  const ACADEMY_UNLOCK_ALL = false;  // 1 lesson/day gate below
+  // A lesson unlocks only once the PREVIOUS one is done AND was completed on an earlier
+  // calendar day — enforcing a true one-lesson-per-day cadence (no bingeing).
+  function acadDailyUnlocked(prev) {
+    if (ACADEMY_UNLOCK_ALL) return true;
+    if (!prev || !prev.done) return false;
+    if (!prev.at) return true;                       // legacy rows without a timestamp
+    const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+    return new Date(prev.at) < startToday;
+  }
   let _acadCat = "all";
   function renderArticle(body) {
     let html = "", inList = false;
@@ -1388,16 +1397,17 @@
     const doneCount = lessons.filter(l => prog[l.id]?.done).length;
     const pct = lessons.length ? Math.round(doneCount / lessons.length * 100) : 0;
     const groups = {};
-    lessons.forEach((l, i) => { l._unlocked = ACADEMY_UNLOCK_ALL || i === 0 || !!prog[lessons[i - 1].id]?.done; (groups[l.week_number] = groups[l.week_number] || []).push(l); });
+    lessons.forEach((l, i) => { const prev = i > 0 ? prog[lessons[i - 1].id] : null; l._unlocked = i === 0 || acadDailyUnlocked(prev); l._waitTomorrow = !l._unlocked && !!(prev && prev.done); (groups[l.week_number] = groups[l.week_number] || []).push(l); });
     const chips = `<div class="filters">${["all", "1", "2", "3", "4", "5"].map(c => `<button data-c="${c}" class="${_acadCat === c ? "on" : ""}">${c === "all" ? "All" : ACADEMY_CHIPS[c - 1]}</button>`).join("")}</div>`;
     const wks = _acadCat === "all" ? Object.keys(groups).sort((a, b) => a - b) : [_acadCat];
     const sectionsHtml = wks.map(wk => {
       const items = groups[wk] || []; const secDone = items.filter(l => prog[l.id]?.done).length;
       const rows = items.map(l => {
         const done = !!prog[l.id]?.done, locked = !l._unlocked && !done;
+        const sub = (locked && l._waitTomorrow) ? "Unlocks tomorrow" : `Day ${l.day_number} · ${l.duration_min} min`;
         return `<div class="lrow lesson ${locked ? "locked" : ""}" data-id="${l.id}">
           <span class="lnum ${done ? "done" : ""}">${done ? "✓" : l.day_number}</span>
-          <span class="ltext"><span class="lt">${esc(l.title)}</span><span class="ls">Day ${l.day_number} · ${l.duration_min} min</span></span>
+          <span class="ltext"><span class="lt">${esc(l.title)}</span><span class="ls">${esc(sub)}</span></span>
           <span class="chev">${locked ? "🔒" : "›"}</span></div>`;
       }).join("");
       return `<div class="section-title" style="margin:22px 0 10px"><h2>${esc(ACADEMY_SECTIONS[wk-1] || ("Section " + wk))}</h2><span style="color:var(--muted);font-weight:700">${secDone}/${items.length}</span></div>
@@ -1417,6 +1427,8 @@
     const list = _lessons || await DB.academyLessons();
     const l = list.find(x => x.id === id); if (!l) return notFound();
     const prog = await DB.lessonProgress(); const taskDone = !!prog[id]?.task;
+    const _idx = list.findIndex(x => x.id === id);   // block deep-linking into a still-locked lesson
+    if (_idx > 0 && !prog[id]?.done && !acadDailyUnlocked(prog[list[_idx - 1].id])) { location.hash = "#/academy"; return; }
     if (_n !== _nav) return;
     view.innerHTML = `<div class="lesson-wrap"><button class="backlink" onclick="location.hash='#/academy'">‹ Academy</button>
       ${l.cover_seed && /^https?:/.test(l.cover_seed) ? `<img class="lesson-cover" src="${l.cover_seed}" alt="">` : ""}
