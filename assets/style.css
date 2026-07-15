@@ -506,6 +506,24 @@ h1.page{font-family:var(--serif);font-size:29px;font-weight:600;letter-spacing:-
 .wacc-2col{display:grid;grid-template-columns:200px 1fr;gap:22px;align-items:center}
 .wacc-video video{width:100%;height:auto;display:block;border-radius:12px;background:#000}
 .wacc-desc.below{margin-top:14px}
+/* Master Zhou Mei welcome */
+.master-btn{display:flex;align-items:center;gap:10px;width:100%;margin:2px 0 14px;padding:12px 16px;border:1px solid var(--line);background:var(--primary-soft);border-radius:14px;cursor:pointer;text-align:left;color:var(--ink);font-size:15px}
+.master-btn .mb-ic{font-size:20px;flex:none}
+.master-btn .mb-tx{flex:1}
+.master-btn .mb-play{flex:none;width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;padding-left:2px}
+.master-btn:hover{filter:brightness(.99)}
+.master-card{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin:0 0 18px;background:#000;box-shadow:0 2px 10px rgba(40,60,40,.08)}
+.mc-poster{position:relative;cursor:pointer;display:block}
+.mc-poster img{width:100%;display:block}
+.mc-playbtn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(47,157,97,.92);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;padding-left:5px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.mc-poster:hover .mc-playbtn{transform:translate(-50%,-50%) scale(1.06)}
+.mc-cap{position:absolute;left:0;right:0;bottom:0;padding:20px 16px 12px;color:#fff;font-size:14px;background:linear-gradient(transparent,rgba(0,0,0,.7));pointer-events:none}
+.mc-x{position:absolute;top:10px;right:10px;z-index:2;width:30px;height:30px;border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.master-modal{position:fixed;inset:0;z-index:200;background:rgba(15,25,18,.86);display:flex;align-items:center;justify-content:center;padding:20px}
+.mm-in{position:relative;width:100%;max-width:900px}
+.mm-vid{width:100%;max-height:82vh;border-radius:14px;background:#000;display:block}
+.mm-x{position:absolute;top:-42px;right:0;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:17px;cursor:pointer}
+@media(max-width:520px){.mm-x{top:-40px}}
 .wacc-steps{list-style:none;counter-reset:st;display:grid;gap:10px;margin:14px 0 4px;padding:0}
 .wacc-steps li{position:relative;padding-left:36px;counter-increment:st;line-height:1.5;color:var(--ink-soft);font-size:16px}
 .wacc-steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center}

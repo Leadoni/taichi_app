@@ -333,6 +333,21 @@
       <div class="body"><div class="t">${title}</div><div class="m">${meta}</div></div></div>`;
   }
 
+  const MASTER_VID = "assets/master-welcome.mp4", MASTER_POSTER = "assets/master-welcome-poster.jpg";
+  function markMasterSeen() { try { localStorage.setItem("tm_master_seen", "1"); } catch (e) {} }
+  // Open Master Zhou Mei's welcome video in a dismissible modal. User-initiated, so sound autoplays.
+  function openMaster() {
+    markMasterSeen();
+    try { if (window.TM) TM.track("master_video_play", {}); } catch (e) {}
+    const ov = document.createElement("div"); ov.className = "master-modal";
+    ov.innerHTML = `<div class="mm-in"><button class="mm-x" aria-label="Close">✕</button>
+      <video class="mm-vid" src="${MASTER_VID}" poster="${MASTER_POSTER}" controls playsinline autoplay></video></div>`;
+    document.body.appendChild(ov);
+    const close = () => { const v = ov.querySelector("video"); if (v) v.pause(); ov.remove(); };
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector(".mm-x").onclick = close;
+  }
+
   function vExercises(tab) {
     tab = tab || "workouts";
     const tabs = `<div class="tabs"><button data-t="workouts" class="${tab==='workouts'?'on':''}">Workouts</button><button data-t="plan" class="${tab==='plan'?'on':''}">Plan</button></div>`;
@@ -368,7 +383,18 @@
             <span class="chk${dn ? " on" : ""}">${dn ? "✓" : (isNext ? "▶" : "")}</span></div>`;
         }).join("")}`;
     }
-    view.innerHTML = `<h1 class="page">Exercises</h1>${tabs}${body}`;
+    let masterSeen = null; try { masterSeen = localStorage.getItem("tm_master_seen"); } catch (e) {}
+    const masterBlock = tab === "workouts" ? `
+      <button class="master-btn" id="masterBtn"><span class="mb-ic">👋</span><span class="mb-tx">Meet your instructor — <b>Master Zhou&nbsp;Mei</b></span><span class="mb-play">▶</span></button>
+      ${masterSeen ? "" : `<div class="master-card" id="masterCard">
+          <button class="mc-x" id="masterX" aria-label="Dismiss">✕</button>
+          <div class="mc-poster" id="masterPlay"><img src="${MASTER_POSTER}" alt="Master Zhou Mei"><span class="mc-playbtn">▶</span></div>
+          <div class="mc-cap">A warm welcome from <b>Master Zhou Mei</b> — press play 🌿</div>
+        </div>`}` : "";
+    view.innerHTML = `<h1 class="page">Exercises</h1>${tabs}${masterBlock}${body}`;
+    { const mb = view.querySelector("#masterBtn"); if (mb) mb.onclick = openMaster;
+      const mp = view.querySelector("#masterPlay"); if (mp) mp.onclick = openMaster;
+      const mx = view.querySelector("#masterX"); if (mx) mx.onclick = () => { markMasterSeen(); const c = view.querySelector("#masterCard"); if (c) c.remove(); }; }
     view.querySelectorAll(".tabs button").forEach(b => b.onclick = () => location.hash = "#/exercises/" + b.dataset.t);
     view.querySelectorAll(".filters button").forEach(b => b.onclick = () => { sessionStorage.setItem("exfilter", b.dataset.c); vExercises("workouts"); });
     view.querySelectorAll(".see-all").forEach(a => a.onclick = () => { sessionStorage.setItem("exfilter", a.dataset.see); vExercises("workouts"); window.scrollTo(0, 0); });
