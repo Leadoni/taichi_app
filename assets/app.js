@@ -341,7 +341,7 @@
     try { if (window.TM) TM.track("master_video_play", {}); } catch (e) {}
     const ov = document.createElement("div"); ov.className = "master-modal";
     ov.innerHTML = `<div class="mm-in"><button class="mm-x" aria-label="Close">✕</button>
-      <video class="mm-vid" src="${MASTER_VID}" poster="${MASTER_POSTER}" controls playsinline autoplay></video></div>`;
+      <video class="mm-vid" src="${MASTER_VID}" poster="${MASTER_POSTER}" controls playsinline preload="metadata"></video></div>`;
     document.body.appendChild(ov);
     const close = () => { const v = ov.querySelector("video"); if (v) v.pause(); ov.remove(); if (location.hash.indexOf("#/exercises") === 0) vExercises("workouts"); };
     ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
