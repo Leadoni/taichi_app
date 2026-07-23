@@ -6,7 +6,7 @@
 (function () {
   var URL = "https://pixtozeghxwiidpnloih.supabase.co";
   var POSTHOG_KEY = "phc_zP7yVawcZX3iQ3qRfhbvxHxz87wnDnizc66yax7bT83i"; // Monokodas org, US cloud ("Tai Motion" project 525048)
-  var POSTHOG_HOST = "https://us.i.posthog.com"; // no reverse proxy for the US project yet
+  var POSTHOG_HOST = "https://t.taimotion.com"; // managed reverse proxy → US cloud
   var POSTHOG_UI = "https://us.posthog.com";
 
   function sid() {
